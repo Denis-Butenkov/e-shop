@@ -1,0 +1,20 @@
+### POST request to example server
+POST http://localhost:8080/api/foods
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; name="food"
+Content-Type: application/json
+
+{
+  "name": "test2",
+  "description": "description2",
+  "category": "test category2",
+  "price": 200.00
+}
+--MyBoundary
+Content-Disposition: form-data; name="file"; filename="test2.png"
+Content-Type: image/png
+
+< ../src/main/resources/image/test2.png
+--MyBoundary--
