@@ -3,6 +3,8 @@ package com.delivery.drelivery.controller;
 import com.delivery.drelivery.dto.FoodRequest;
 import com.delivery.drelivery.dto.FoodResponse;
 import com.delivery.drelivery.service.FoodService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -23,8 +25,10 @@ public class FoodController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public FoodResponse addFood(@RequestPart("food") FoodRequest request,
-                                @RequestPart("file") MultipartFile file) {
+    public FoodResponse addFood(@RequestPart("food") String foodJson,
+                                @RequestPart("file") MultipartFile file) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        FoodRequest request = mapper.readValue(foodJson, FoodRequest.class);
         log.info("Received request for adding a food: {}", request);
         return foodService.addFood(request, file);
     }
