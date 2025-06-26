@@ -3,8 +3,8 @@ POST http://localhost:8080/api/register
 Content-Type: application/json
 
 {
-  "fullName": "Test2 User",
-  "email": "test2.userEntity@example.com",
+  "fullName": "Test User",
+  "email": "test.user@example.com",
   "password": "12345678"
 }
 

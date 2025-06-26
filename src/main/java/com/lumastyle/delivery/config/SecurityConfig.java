@@ -65,20 +65,9 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "http://localhost:5174")
         );
-        config.setAllowedMethods(List.of(
-                "GET",
-                "PATCH",
-                "PUT",
-                "POST",
-                "DELETE",
-                "OPTIONS")
+        config.setAllowedMethods(List.of("GET", "PATCH", "PUT", "POST", "DELETE", "OPTIONS")
         );
-        config.setAllowedHeaders(List.of(
-                "Authorization",
-                "Content-Type",
-                "'X-Requested-With",
-                "Accept",
-                "*")
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type")
         );
         config.setAllowCredentials(true);
 
