@@ -23,7 +23,8 @@ public class AppUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserEntity user = repository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-        log.info("User found successfully: {}", email); // log displaying 2x because of spring security calls user twice
+        log.info("User found successfully: {}", email);
+        // log displaying 2x because spring security calls the user twice
         return new User(user.getEmail(), user.getPassword(), Collections.emptyList());
     }
 }

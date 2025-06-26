@@ -2,24 +2,24 @@ package com.lumastyle.delivery.config;
 
 
 import com.lumastyle.delivery.filter.JwtAuthFilter;
-import com.lumastyle.delivery.service.impl.AppUserDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
@@ -28,22 +28,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final AppUserDetailsService userDetailsService;
     private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         return http
-                .cors(Customizer.withDefaults())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth.requestMatchers(
-                        "/api/login",
-                        "/api/register",
-                        "/api/foods/**"
-                ).permitAll().anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/login", "/api/register").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/foods/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .anyRequest().authenticated()
+                )
                 .sessionManagement(session -> session.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS)
+                ).exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authEx) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing token"))
+                        .accessDeniedHandler((req, res, deniedEx) ->
+                                res.sendError(HttpServletResponse.SC_FORBIDDEN, "Not enough permissions"))
                 ).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
 
@@ -54,16 +59,27 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
-    }
-
-    private UrlBasedCorsConfigurationSource corsConfigurationSource() {
+    private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
-        config.setAllowedMethods(List.of("GET", "PATCH", "PUT", "POST", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://localhost:5174")
+        );
+        config.setAllowedMethods(List.of(
+                "GET",
+                "PATCH",
+                "PUT",
+                "POST",
+                "DELETE",
+                "OPTIONS")
+        );
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "'X-Requested-With",
+                "Accept",
+                "*")
+        );
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -72,13 +88,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider(
-            UserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder
-    ) {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder);
-        return provider;
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
+
 
 }
