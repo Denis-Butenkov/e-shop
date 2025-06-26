@@ -1,0 +1,11 @@
+### POST request to register a new User
+POST http://localhost:8080/api/register
+Content-Type: application/json
+
+{
+  "fullName": "Test User",
+  "email": "test.userEntity@example.com",
+  "password": "12345678"
+}
+
+###

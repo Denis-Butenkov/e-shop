@@ -1,0 +1,32 @@
+package com.lumastyle.delivery.controller;
+
+import com.lumastyle.delivery.dto.AuthRequest;
+import com.lumastyle.delivery.dto.AuthResponse;
+import com.lumastyle.delivery.service.impl.AppUserDetailsService;
+import com.lumastyle.delivery.util.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+
+@Slf4j
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final DaoAuthenticationProvider authProvider;
+    private final AppUserDetailsService userDetailsService;
+    private final JwtUtil jwtUtil;
+
+    @PostMapping("/login")
+    public AuthResponse login(@RequestBody AuthRequest request) {
+        log.info("Received login request for user: {}", request.getEmail());
+        authProvider.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+        final String jwtToken = jwtUtil.generateToken(userDetails);
+        return new AuthResponse(request.getEmail(), jwtToken);
+    }
+}
