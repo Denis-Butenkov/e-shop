@@ -19,9 +19,12 @@ import java.util.function.Function;
 @Slf4j
 @Component
 public class JwtUtil {
-    // původní verze
+
     @Value("${jwt.secret.key}")
     private String secretKey;
+
+    @Value("${jwt.expiration.millis}")
+    private long expiration;            // 10-hours expiration
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
@@ -58,7 +61,7 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 10)) // 10-hours expiration
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(signingKey)
                 .compact();
     }
