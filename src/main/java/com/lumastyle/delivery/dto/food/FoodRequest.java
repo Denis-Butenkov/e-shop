@@ -1,4 +1,4 @@
-package com.lumastyle.delivery.dto;
+package com.lumastyle.delivery.dto.food;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;

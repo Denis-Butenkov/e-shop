@@ -1,7 +1,7 @@
 package com.lumastyle.delivery.service.impl;
 
-import com.lumastyle.delivery.dto.FoodRequest;
-import com.lumastyle.delivery.dto.FoodResponse;
+import com.lumastyle.delivery.dto.food.FoodRequest;
+import com.lumastyle.delivery.dto.food.FoodResponse;
 import com.lumastyle.delivery.entity.FoodEntity;
 import com.lumastyle.delivery.exception.FileStorageException;
 import com.lumastyle.delivery.exception.ResourceNotFoundException;

@@ -1,4 +1,4 @@
-package com.lumastyle.delivery.dto;
+package com.lumastyle.delivery.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthRequest {
+public class UserResponse {
+    private String id;
+    private String fullName;
     private String email;
-    private String password;
 }

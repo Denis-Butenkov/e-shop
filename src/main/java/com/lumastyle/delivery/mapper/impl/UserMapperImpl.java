@@ -1,7 +1,7 @@
 package com.lumastyle.delivery.mapper.impl;
 
-import com.lumastyle.delivery.dto.UserRequest;
-import com.lumastyle.delivery.dto.UserResponse;
+import com.lumastyle.delivery.dto.user.UserRequest;
+import com.lumastyle.delivery.dto.user.UserResponse;
 import com.lumastyle.delivery.entity.UserEntity;
 import com.lumastyle.delivery.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;

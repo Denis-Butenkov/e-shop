@@ -1,7 +1,7 @@
 package com.lumastyle.delivery.controller;
 
-import com.lumastyle.delivery.dto.UserRequest;
-import com.lumastyle.delivery.dto.UserResponse;
+import com.lumastyle.delivery.dto.user.UserRequest;
+import com.lumastyle.delivery.dto.user.UserResponse;
 import com.lumastyle.delivery.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

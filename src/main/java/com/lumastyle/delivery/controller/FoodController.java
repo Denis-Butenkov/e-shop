@@ -1,7 +1,7 @@
 package com.lumastyle.delivery.controller;
 
-import com.lumastyle.delivery.dto.FoodRequest;
-import com.lumastyle.delivery.dto.FoodResponse;
+import com.lumastyle.delivery.dto.food.FoodRequest;
+import com.lumastyle.delivery.dto.food.FoodResponse;
 import com.lumastyle.delivery.service.FoodService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;

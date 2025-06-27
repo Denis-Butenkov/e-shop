@@ -8,11 +8,25 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
-import java.util.stream.Collectors;
+import java.util.List;
 
+/**
+ * Global exception handler delivering uniform error responses across all controllers.
+ * <p>
+ * Catches specific application exceptions and transforms them into structured
+ * {@link ErrorResponse} payloads with appropriate HTTP status codes.
+ * </p>
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Handles custom {@link BadRequestException} thrown by service or controller logic.
+     *
+     * @param ex      the BadRequestException instance
+     * @param request the HttpServletRequest that resulted in the exception
+     * @return ResponseEntity containing an {@link ErrorResponse} with status 400
+     */
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(
             BadRequestException ex,
@@ -30,23 +44,48 @@ public class GlobalExceptionHandler {
                 .body(body);
     }
 
+    /**
+     * Handles {@link MethodArgumentNotValidException} raised on validation failures
+     * for {@code @Valid}-annotated request bodies.
+     *
+     * @param ex      the MethodArgumentNotValidException instance
+     * @param request the HttpServletRequest that resulted in the exception
+     * @return ResponseEntity containing an {@link ErrorResponse} with status 400
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
-        String message = ex.getBindingResult().getFieldErrors().stream()
-                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
-                .collect(Collectors.joining("; "));
+        // Collect field error messages into a single string
+        List<String> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> {
+                    String msg = fieldError.getDefaultMessage();
+                    return String.format("%s: %s", fieldError.getField(),
+                            msg != null ? msg : "Invalid value");
+                })
+                .toList();
+        String combined = String.join("; ", errors);
+
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation Failed",
-                message,
-                request.getRequestURI());
-        return ResponseEntity.badRequest().body(body);
+                combined,
+                request.getRequestURI()
+        );
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(body);
     }
 
+    /**
+     * Handles {@link ResourceNotFoundException} for missing resources.
+     *
+     * @param ex      the ResourceNotFoundException instance
+     * @param request the HttpServletRequest that resulted in the exception
+     * @return ResponseEntity containing an {@link ErrorResponse} with status 404
+     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(
             ResourceNotFoundException ex,
@@ -59,9 +98,18 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(body);
     }
 
+    /**
+     * Handles {@link FileStorageException} for errors during file operations.
+     *
+     * @param ex      the FileStorageException instance
+     * @param request the HttpServletRequest that resulted in the exception
+     * @return ResponseEntity containing an {@link ErrorResponse} with status 500
+     */
     @ExceptionHandler(FileStorageException.class)
     public ResponseEntity<ErrorResponse> handleStorage(
             FileStorageException ex,
@@ -74,9 +122,18 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(body);
     }
 
+    /**
+     * Handles all uncaught exceptions as internal server errors.
+     *
+     * @param ex      the Exception instance
+     * @param request the HttpServletRequest that resulted in the exception
+     * @return ResponseEntity containing an {@link ErrorResponse} with status 500
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAny(
             Exception ex,
@@ -89,6 +146,8 @@ public class GlobalExceptionHandler {
                 ex.getMessage(),
                 request.getRequestURI()
         );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(body);
     }
 }

@@ -1,7 +1,7 @@
 package com.lumastyle.delivery.service;
 
-import com.lumastyle.delivery.dto.FoodRequest;
-import com.lumastyle.delivery.dto.FoodResponse;
+import com.lumastyle.delivery.dto.food.FoodRequest;
+import com.lumastyle.delivery.dto.food.FoodResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;

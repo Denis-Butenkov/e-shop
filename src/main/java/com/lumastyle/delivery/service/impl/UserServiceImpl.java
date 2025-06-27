@@ -1,10 +1,11 @@
 package com.lumastyle.delivery.service.impl;
 
-import com.lumastyle.delivery.dto.UserRequest;
-import com.lumastyle.delivery.dto.UserResponse;
+import com.lumastyle.delivery.dto.user.UserRequest;
+import com.lumastyle.delivery.dto.user.UserResponse;
 import com.lumastyle.delivery.entity.UserEntity;
 import com.lumastyle.delivery.mapper.UserMapper;
 import com.lumastyle.delivery.repository.UserRepository;
+import com.lumastyle.delivery.service.AuthFacade;
 import com.lumastyle.delivery.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository repository;
     private final UserMapper mapper;
+    private final AuthFacade authFacade;
 
     @Override
     public UserResponse registerUser(UserRequest request) {
@@ -24,6 +26,15 @@ public class UserServiceImpl implements UserService {
         newUserEntity = repository.save(newUserEntity);
         log.info("User registered successfully: {}", request.getEmail());
         return mapper.toResponse(newUserEntity);
+    }
+
+    @Override
+    public String findByUserId() {
+        String loggedInUserEmail = authFacade.getAuthentication().getName();
+        UserEntity loggedInUser = repository.findByEmail(loggedInUserEmail)
+                .orElseThrow(() -> new IllegalStateException("User not found: " + loggedInUserEmail));
+        log.info("User found successfully: {}", loggedInUserEmail);
+        return loggedInUser.getId();
     }
 
 }

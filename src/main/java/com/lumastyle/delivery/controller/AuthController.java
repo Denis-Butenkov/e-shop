@@ -1,7 +1,7 @@
 package com.lumastyle.delivery.controller;
 
-import com.lumastyle.delivery.dto.AuthRequest;
-import com.lumastyle.delivery.dto.AuthResponse;
+import com.lumastyle.delivery.dto.auth.AuthRequest;
+import com.lumastyle.delivery.dto.auth.AuthResponse;
 import com.lumastyle.delivery.service.impl.AppUserDetailsService;
 import com.lumastyle.delivery.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
