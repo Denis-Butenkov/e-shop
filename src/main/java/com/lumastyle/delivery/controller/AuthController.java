@@ -4,6 +4,7 @@ import com.lumastyle.delivery.dto.auth.AuthRequest;
 import com.lumastyle.delivery.dto.auth.AuthResponse;
 import com.lumastyle.delivery.service.impl.AppUserDetailsService;
 import com.lumastyle.delivery.util.JwtUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,7 +23,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody AuthRequest request) {
+    public AuthResponse login(@Valid @RequestBody AuthRequest request) {
         log.info("Received login request for user: {}", request.getEmail());
         authManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());

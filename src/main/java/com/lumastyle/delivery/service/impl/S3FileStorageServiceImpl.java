@@ -28,7 +28,7 @@ public class S3FileStorageServiceImpl implements FileStorageService {
 
     private final S3Client s3Client;
 
-    @Value("${aws.3s.bucket.name}")
+    @Value("${aws.s3.bucket.name}")
     private String bucketName;
 
     private static void validation(PutObjectResponse response, String key) {

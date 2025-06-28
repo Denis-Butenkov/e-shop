@@ -3,6 +3,7 @@ package com.lumastyle.delivery.service.impl;
 import com.lumastyle.delivery.dto.cart.CartRequest;
 import com.lumastyle.delivery.dto.cart.CartResponse;
 import com.lumastyle.delivery.entity.CartEntity;
+import com.lumastyle.delivery.exception.ResourceNotFoundException;
 import com.lumastyle.delivery.mapper.CartMapper;
 import com.lumastyle.delivery.repository.CartRepository;
 import com.lumastyle.delivery.service.CartService;
@@ -55,7 +56,7 @@ public class CartServiceImpl implements CartService {
     public CartResponse removeFromCart(CartRequest request) {
         String userId = getLoggedUserId();
         CartEntity cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Cart is not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart is not found"));
         Map<String, Integer> cartItems = cart.getItems();
         if (cartItems.containsKey(request.getFoodId())) {
             cartItems.compute(request.getFoodId(), (foodId, qty) -> {
@@ -72,7 +73,7 @@ public class CartServiceImpl implements CartService {
     // === Helper methods ===
 
     private String getLoggedUserId() {
-        return service.findByUserId();
+        return service.getCurrentUserId();
     }
 }
 

@@ -1,4 +1,4 @@
 ### GET request to example server
-GET http://localhost:8080/api/foods/685167e64e15da737dfacc
+GET http://localhost:8080/api/products/685167e64e15da737dfacc
 
 ###

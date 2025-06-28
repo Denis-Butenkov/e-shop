@@ -37,7 +37,8 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 ex.getMessage(),
-                request.getRequestURI()
+                request.getRequestURI(),
+                List.of()
         );
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
@@ -57,14 +58,8 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex,
             HttpServletRequest request
     ) {
-        // Collect field error messages into a single string
-        List<String> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(fieldError -> {
-                    String msg = fieldError.getDefaultMessage();
-                    return String.format("%s: %s", fieldError.getField(),
-                            msg != null ? msg : "Invalid value");
-                })
-                .toList();
+        List<String> errors = collectFieldErrors(ex);
+
         String combined = String.join("; ", errors);
 
         ErrorResponse body = new ErrorResponse(
@@ -72,12 +67,14 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation Failed",
                 combined,
-                request.getRequestURI()
+                request.getRequestURI(),
+                errors       // field-specific messages
         );
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(body);
     }
+
 
     /**
      * Handles {@link ResourceNotFoundException} for missing resources.
@@ -96,7 +93,8 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 ex.getMessage(),
-                request.getRequestURI()
+                request.getRequestURI(),
+                List.of()
         );
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
@@ -120,7 +118,8 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "File Storage Error",
                 ex.getMessage(),
-                request.getRequestURI()
+                request.getRequestURI(),
+                List.of()
         );
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -144,10 +143,23 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
                 ex.getMessage(),
-                request.getRequestURI()
+                request.getRequestURI(),
+                List.of()
         );
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(body);
+    }
+
+    // === Helper methods ===
+
+    private static List<String> collectFieldErrors(MethodArgumentNotValidException ex) {
+        return ex.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> String.format(
+                        "%s: %s",
+                        fieldError.getField(),
+                        fieldError.getDefaultMessage() != null ? fieldError.getDefaultMessage() : "Invalid value"
+                ))
+                .toList();
     }
 }

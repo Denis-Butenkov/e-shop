@@ -3,6 +3,7 @@ package com.lumastyle.delivery.service.impl;
 import com.lumastyle.delivery.dto.user.UserRequest;
 import com.lumastyle.delivery.dto.user.UserResponse;
 import com.lumastyle.delivery.entity.UserEntity;
+import com.lumastyle.delivery.exception.BadRequestException;
 import com.lumastyle.delivery.mapper.UserMapper;
 import com.lumastyle.delivery.repository.UserRepository;
 import com.lumastyle.delivery.service.AuthFacade;
@@ -22,6 +23,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse registerUser(UserRequest request) {
+        isUniqueValidation(request);
         UserEntity newUserEntity = mapper.toEntity(request);
         newUserEntity = repository.save(newUserEntity);
         log.info("User registered successfully: {}", request.getEmail());
@@ -29,12 +31,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String findByUserId() {
+    public String getCurrentUserId() {
         String loggedInUserEmail = authFacade.getAuthentication().getName();
         UserEntity loggedInUser = repository.findByEmail(loggedInUserEmail)
                 .orElseThrow(() -> new IllegalStateException("User not found: " + loggedInUserEmail));
         log.info("User found successfully: {}", loggedInUserEmail);
         return loggedInUser.getId();
+    }
+
+    // === Helper methods ===
+
+    private void isUniqueValidation(UserRequest request) {
+        if (repository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BadRequestException(
+                    "User with email: '" + request.getEmail() + "' already exists"
+            );
+        }
     }
 
 }

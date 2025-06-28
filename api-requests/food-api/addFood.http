@@ -1,5 +1,5 @@
 ### POST request to example server
-POST http://localhost:8080/api/foods
+POST http://localhost:8080/api/products
 Content-Type: multipart/form-data; boundary=MyBoundary
 
 --MyBoundary

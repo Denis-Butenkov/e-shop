@@ -1,16 +1,16 @@
 package com.lumastyle.delivery.mapper.impl;
 
-import com.lumastyle.delivery.dto.food.FoodRequest;
-import com.lumastyle.delivery.dto.food.FoodResponse;
-import com.lumastyle.delivery.entity.FoodEntity;
-import com.lumastyle.delivery.mapper.FoodMapper;
+import com.lumastyle.delivery.dto.product.ProductRequest;
+import com.lumastyle.delivery.dto.product.ProductResponse;
+import com.lumastyle.delivery.entity.ProductEntity;
+import com.lumastyle.delivery.mapper.ProductMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FoodMapperImpl implements FoodMapper {
+public class ProductMapperImpl implements ProductMapper {
     @Override
-    public FoodEntity toEntity(FoodRequest request) {
-        return FoodEntity.builder()
+    public ProductEntity toEntity(ProductRequest request) {
+        return ProductEntity.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .category(request.getCategory())
@@ -19,8 +19,8 @@ public class FoodMapperImpl implements FoodMapper {
     }
 
     @Override
-    public FoodResponse toResponse(FoodEntity entity) {
-        return FoodResponse.builder()
+    public ProductResponse toResponse(ProductEntity entity) {
+        return ProductResponse.builder()
                 .id(entity.getId())
                 .name(entity.getName())
                 .description(entity.getDescription())
