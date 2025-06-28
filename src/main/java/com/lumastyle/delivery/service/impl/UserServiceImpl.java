@@ -41,6 +41,13 @@ public class UserServiceImpl implements UserService {
 
     // === Helper methods ===
 
+    /**
+     * Validates that the requested email is not already in use.
+     * Throws BadRequestException if a user with that email exists.
+     *
+     * @param request the incoming UserRequest
+     * @throws BadRequestException if email is already taken
+     */
     private void isUniqueValidation(UserRequest request) {
         if (repository.findByEmail(request.getEmail()).isPresent()) {
             throw new BadRequestException(

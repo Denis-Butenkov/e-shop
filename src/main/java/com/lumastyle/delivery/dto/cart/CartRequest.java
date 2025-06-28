@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 public class CartRequest {
 
     @NotBlank(message = "FoodId must be provided")
-    private String foodId;
+    private String productId;
 
 }

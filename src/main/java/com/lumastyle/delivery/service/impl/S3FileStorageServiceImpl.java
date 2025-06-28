@@ -77,6 +77,12 @@ public class S3FileStorageServiceImpl implements FileStorageService {
 
     // === Helper methods ===
 
+    /**
+     * Generates a unique key for S3 by appending a UUID to the original file’s extension.
+     *
+     * @param file the incoming multipart file
+     * @return a random UUID + original extension (e.g. “ae13f4d2-... .png”)
+     */
     private static String getKey(MultipartFile file) {
         String original = Objects.requireNonNull(file.getOriginalFilename());
         String extension = original.contains(".")
@@ -85,6 +91,13 @@ public class S3FileStorageServiceImpl implements FileStorageService {
         return UUID.randomUUID() + extension;
     }
 
+    /**
+     * Checks the file name for invalid path sequences (“..”) and
+     * throws a BadRequestException if found.
+     *
+     * @param file the multipart file to validate
+     * @throws BadRequestException if the file name contains “..”
+     */
     private void validatePath(MultipartFile file) {
         String original = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         if (original.contains("..")) {
@@ -93,6 +106,13 @@ public class S3FileStorageServiceImpl implements FileStorageService {
         }
     }
 
+    /**
+     * Builds the S3 PutObjectRequest with public-read ACL and correct content type.
+     *
+     * @param file the incoming multipart file
+     * @param key  the S3 key under which to store the file
+     * @return a configured PutObjectRequest
+     */
     private PutObjectRequest buildS3PutObjectRequest(MultipartFile file, String key) {
         return PutObjectRequest.builder()
                 .bucket(bucketName)

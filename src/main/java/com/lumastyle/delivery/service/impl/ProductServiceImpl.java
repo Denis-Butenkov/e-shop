@@ -73,6 +73,13 @@ public class ProductServiceImpl implements ProductService {
 
     // === Helper method ===
 
+    /**
+     * Ensures that the given file was deleted successfully; if not, logs and throws.
+     *
+     * @param isFileDeleted whether S3 reported success
+     * @param key           the S3 object key that was attempted to delete
+     * @throws FileStorageException if deletion failed
+     */
     private static void validate(boolean isFileDeleted, String key) {
         if (!isFileDeleted) {
             log.error("Failed to delete file with key {}", key);
@@ -80,6 +87,14 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+
+    /**
+     * Looks up a ProductEntity by its id or throws if not found.
+     *
+     * @param id the product id to find
+     * @return the found ProductEntity
+     * @throws ResourceNotFoundException if no product with that id exists
+     */
     private ProductEntity findFoodById(String id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Food not found with id " + id));

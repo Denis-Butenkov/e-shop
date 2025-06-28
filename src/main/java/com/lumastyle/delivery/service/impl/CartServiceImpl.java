@@ -30,10 +30,7 @@ public class CartServiceImpl implements CartService {
         CartEntity cart = repository.findByUserId(userId)
                 .orElseGet(() -> new CartEntity(userId, new HashMap<>()));
 
-        var items = cart.getItems();
-        items.put(request.getFoodId(), items.getOrDefault(request.getFoodId(), 0) + 1);
-        cart.setItems(items);
-
+        incrementItem(cart, request.getProductId());
         CartEntity saved = repository.save(cart);
         return mapper.toResponse(saved);
     }
@@ -54,26 +51,60 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public CartResponse removeFromCart(CartRequest request) {
-        String userId = getLoggedUserId();
-        CartEntity cart = repository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cart is not found"));
-        Map<String, Integer> cartItems = cart.getItems();
-        if (cartItems.containsKey(request.getFoodId())) {
-            cartItems.compute(request.getFoodId(), (foodId, qty) -> {
-                if (qty == null) return null;
-                int updated = qty - 1;
-                return updated > 0 ? updated : null;
-            });
+        CartEntity cart = loadCartOrThrow();
+        boolean changed = decrementItem(cart, request.getProductId());
+        if (changed) {
             cart = repository.save(cart);
         }
         return mapper.toResponse(cart);
-
     }
 
-    // === Helper methods ===
+    // --- helper methods ---
 
+    /**
+     * Gets the ID of the currently authenticated user.
+     */
     private String getLoggedUserId() {
         return service.getCurrentUserId();
     }
+
+    /**
+     * Loads the cart for the current user or throws if not found
+     */
+    private CartEntity loadCartOrThrow() {
+        return repository.findByUserId(getLoggedUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+    }
+
+    /**
+     * Increments the quantity of a given productID by 1.
+     */
+    private void incrementItem(CartEntity cart, String productId) {
+        Map<String, Integer> items = cart.getItems();
+        items.put(productId, items.getOrDefault(productId, 0) + 1);
+        cart.setItems(items);
+    }
+
+    /**
+     * Decrements quantity for a given productID; removes key if quantity reaches 0.
+     * @return true if an item was present and changed
+     */
+    private boolean decrementItem(CartEntity cart, String productId) {
+        Map<String, Integer> items = cart.getItems();
+        if (!items.containsKey(productId)) {
+            return false;
+        }
+        updateItemQuantity(items, productId);
+        cart.setItems(items);
+        return true;
+    }
+
+    /**
+     * Helper to update quantity or remove the entry if it reaches zero.
+     */
+    private void updateItemQuantity(Map<String, Integer> items, String productId) {
+        items.computeIfPresent(productId, (id, qty) -> qty > 1 ? qty - 1 : null);
+    }
+
 }
 
