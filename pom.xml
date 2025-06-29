@@ -92,6 +92,12 @@
             <artifactId>gp-java-api-v3-common</artifactId>
             <version>3.8.1</version>
         </dependency>
+<!--        will be removed in the future-->
+        <dependency>
+            <groupId>com.razorpay</groupId>
+            <artifactId>razorpay-java</artifactId>
+            <version>1.4.8</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
