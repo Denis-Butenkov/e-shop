@@ -3,7 +3,6 @@ package com.lumastyle.eshop.controller;
 import com.lumastyle.eshop.dto.order.OrderRequest;
 import com.lumastyle.eshop.dto.order.OrderResponse;
 import com.lumastyle.eshop.service.OrderService;
-import com.razorpay.RazorpayException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,7 +21,7 @@ public class OrderController {
 
     @PostMapping("/create")
     @ResponseStatus(HttpStatus.CREATED)
-    public OrderResponse createOrderAndPayment(@RequestBody OrderRequest request) throws RazorpayException {
+    public OrderResponse createOrderAndPayment(@RequestBody OrderRequest request) {
         log.info("Received request to create a new order: {}", request);
         return service.createOrderAndPayment(request);
     }
@@ -60,5 +59,4 @@ public class OrderController {
         log.info("Received request to update the status of an order with id: {} to: {}", orderId, status);
         service.updateOrderStatus(orderId, status);
     }
-
 }

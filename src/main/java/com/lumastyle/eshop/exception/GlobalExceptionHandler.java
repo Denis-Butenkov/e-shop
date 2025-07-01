@@ -127,6 +127,31 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles exceptions thrown during GoPay integration.
+     *
+     * @param ex      the GoPayIntegrationException containing details about the integration failure
+     * @param request the HTTP request that resulted in the exception
+     * @return a ResponseEntity containing an ErrorResponse with HTTP 502 Bad Gateway status
+     */
+    @ExceptionHandler(GoPayIntegrationException.class)
+    public ResponseEntity<ErrorResponse> handleGoPayIntegration(
+            GoPayIntegrationException ex,
+            HttpServletRequest request
+    ) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_GATEWAY.value(),
+                "GoPay Integration Error",
+                ex.getMessage(),
+                request.getRequestURI(),
+                List.of()
+        );
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(body);
+    }
+
+    /**
      * Handles all uncaught exceptions as internal server errors.
      *
      * @param ex      the Exception instance
@@ -153,6 +178,12 @@ public class GlobalExceptionHandler {
 
     // === Helper methods ===
 
+    /**
+     * Collects validation errors from a MethodArgumentNotValidException into a list of field error messages.
+     *
+     * @param ex the MethodArgumentNotValidException containing a binding result with field errors
+     * @return a list of formatted error messages in the form "fieldName: errorMessage"
+     */
     private static List<String> collectFieldErrors(MethodArgumentNotValidException ex) {
         return ex.getBindingResult().getFieldErrors().stream()
                 .map(fieldError -> String.format(

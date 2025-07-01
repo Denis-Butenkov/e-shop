@@ -26,7 +26,7 @@ public class OrderMapperImpl implements OrderMapper {
                 .amount(entity.getAmount())
                 .userAddress(entity.getUserAddress())
                 .userId(entity.getUserId())
-                .paymentOrderId(entity.getPaymentOrderId())
+                .paymentOrderId(entity.getGopayPaymentId())
                 .paymentStatus(entity.getPaymentStatus())
                 .orderStatus(entity.getOrderStatus())
                 .email(entity.getEmail())

@@ -12,5 +12,5 @@ public interface OrderRepository extends MongoRepository<OrderEntity, String> {
 
     List<OrderEntity> findByUserId(String userId);
 
-    Optional<OrderEntity> findByPaymentOrderId(String paymentOrderId);
+    Optional<OrderEntity> findByGopayPaymentId(String paymentOrderId);
 }

@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.SdkHttpResponse;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Unit tests for {@link S3FileStorageServiceImpl}.
  */
+@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class S3FileStorageServiceTest {
 

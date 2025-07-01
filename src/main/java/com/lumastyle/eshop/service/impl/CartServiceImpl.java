@@ -27,34 +27,42 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartResponse addToCart(CartRequest request) {
         String userId = getLoggedUserId();
+        log.info("Adding item to cart for user: {}", userId);
         CartEntity cart = repository.findByUserId(userId)
                 .orElseGet(() -> new CartEntity(userId, new HashMap<>()));
-
+        log.info("Adding item to cart: {}", request);
         incrementItem(cart, request.getProductId());
         CartEntity saved = repository.save(cart);
+        log.info("Item added to cart successfully: {}", saved);
         return mapper.toResponse(saved);
     }
 
     @Override
     public CartResponse getCart() {
         String userId = getLoggedUserId();
+        log.info("Reading cart for user: {}", getLoggedUserId());
         CartEntity entity = repository.findByUserId(userId)
                 .orElse(new CartEntity(null, userId, new HashMap<>()));
+        log.info("Cart found successfully: {}", entity);
         return mapper.toResponse(entity);
     }
 
     @Override
     public void cleanCart() {
         String userId = getLoggedUserId();
+        log.info("Cleaning cart for user: {}", userId);
         repository.deleteByUserId(userId);
+        log.info("Cart for user: {} deleted successfully", userId);
     }
 
     @Override
     public CartResponse removeFromCart(CartRequest request) {
         CartEntity cart = loadCartOrThrow();
         boolean changed = decrementItem(cart, request.getProductId());
+        log.info("Removing item from cart: {}", request);
         if (changed) {
             cart = repository.save(cart);
+            log.info("Item removed from cart successfully: {}", cart);
         }
         return mapper.toResponse(cart);
     }
@@ -65,6 +73,7 @@ public class CartServiceImpl implements CartService {
      * Gets the ID of the currently authenticated user.
      */
     private String getLoggedUserId() {
+        log.info("Getting logged in user ID");
         return service.getCurrentUserId();
     }
 
@@ -72,6 +81,7 @@ public class CartServiceImpl implements CartService {
      * Loads the cart for the current user or throws if not found
      */
     private CartEntity loadCartOrThrow() {
+        log.info("Loading cart for user: {}", getLoggedUserId());
         return repository.findByUserId(getLoggedUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
     }
@@ -80,6 +90,7 @@ public class CartServiceImpl implements CartService {
      * Increments the quantity of a given productID by 1.
      */
     private void incrementItem(CartEntity cart, String productId) {
+        log.info("Incrementing item for productID: {}", productId);
         Map<String, Integer> items = cart.getItems();
         items.put(productId, items.getOrDefault(productId, 0) + 1);
         cart.setItems(items);
@@ -90,6 +101,7 @@ public class CartServiceImpl implements CartService {
      * @return true if an item was present and changed
      */
     private boolean decrementItem(CartEntity cart, String productId) {
+        log.info("Decrementing item for productID: {}", productId);
         Map<String, Integer> items = cart.getItems();
         if (!items.containsKey(productId)) {
             return false;

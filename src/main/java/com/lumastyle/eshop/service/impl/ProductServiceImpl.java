@@ -33,6 +33,7 @@ public class ProductServiceImpl implements ProductService {
         try {
             imageUrl = fileStorage.uploadFile(file);
         } catch (RuntimeException e) {
+            log.error("File upload failed", e);
             throw new FileStorageException("File upload failed", e);
         }
         ProductEntity entity = productMapper.toEntity(request);

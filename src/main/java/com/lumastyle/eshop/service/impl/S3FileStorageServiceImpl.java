@@ -31,15 +31,6 @@ public class S3FileStorageServiceImpl implements FileStorageService {
     @Value("${aws.s3.bucket.name}")
     private String bucketName;
 
-    private static void validation(PutObjectResponse response, String key) {
-        if (!response.sdkHttpResponse().isSuccessful()) {
-            log.error("S3 upload failed: {}",
-                    response.sdkHttpResponse().statusText().orElse("<no message>"));
-            throw new FileStorageException(
-                    "File upload to S3 was not successful for key: " + key);
-        }
-    }
-
     @Override
     public String uploadFile(MultipartFile file) {
         validatePath(file);
@@ -51,7 +42,7 @@ public class S3FileStorageServiceImpl implements FileStorageService {
             PutObjectRequest request = buildS3PutObjectRequest(file, key);
 
             PutObjectResponse response = s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
-            validation(response, key);
+            validateResponse(response, key);
         } catch (IOException e) {
             throw new FileStorageException("Upload failed", e);
         }
@@ -74,8 +65,23 @@ public class S3FileStorageServiceImpl implements FileStorageService {
         }
     }
 
-
     // === Helper methods ===
+
+    /**
+     * Validates the S3 PutObjectResponse and throws FileStorageException if the upload was not successful.
+     *
+     * @param response the response returned by the S3 client after attempting to upload an object
+     * @param key      the S3 key under which the object was to be stored
+     * @throws FileStorageException if the HTTP response from S3 is not successful
+     */
+    private static void validateResponse(PutObjectResponse response, String key) {
+        if (!response.sdkHttpResponse().isSuccessful()) {
+            log.error("S3 upload failed: {}",
+                    response.sdkHttpResponse().statusText().orElse("<no message>"));
+            throw new FileStorageException(
+                    "File upload to S3 was not successful for key: " + key);
+        }
+    }
 
     /**
      * Generates a unique key for S3 by appending a UUID to the original file’s extension.

@@ -33,11 +33,9 @@ public class OrderEntity {
 
     private String paymentStatus;
 
-    private String paymentOrderId;
+    private String gopayPaymentId;
 
-    private String paymentId;
-
-    private String signature;
+    private String gopayTransactionId;
 
     private String orderStatus;
 }
