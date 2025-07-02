@@ -12,16 +12,20 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
@@ -37,19 +41,69 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/login", "/api/register").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/orders/all", "/api/orders/status/**").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // public endpoints for authentication
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/login",
+                                "/api/register")
+                        .permitAll()
+                        // public endpoints for products and orders
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/products/**",
+                                "/api/orders/all",
+                                "/api/orders/status/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS,
+                                "/**")
+                        .permitAll()
+                        // OpenAPI / Swagger UI
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**")
+                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS)
-                ).exceptionHandling(exception -> exception
+                )
+                .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authEx) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing token"))
-                        .accessDeniedHandler((req, res, deniedEx) ->
-                                res.sendError(HttpServletResponse.SC_FORBIDDEN, "Not enough permissions"))
-                ).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                        .accessDeniedHandler((request, response, deniedEx) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Not enough permissions"))
+                )       // Security headers
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000)
+                        )
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives(
+                                        "default-src 'self'; " +
+                                                "script-src 'self'; " +
+                                                "style-src 'self' 'unsafe-inline'; " +
+                                                "img-src 'self' data:; " +
+                                                "font-src 'self' data:;"
+                                )
+                        )
+                        .addHeaderWriter(new ReferrerPolicyHeaderWriter(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER_WHEN_DOWNGRADE
+                        ))
+                        .addHeaderWriter((request, response) ->
+                                response.setHeader(
+                                        "Permissions-Policy",
+                                        "geolocation=(), microphone=(), camera=()"
+                                )
+                        )
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
+                        .contentTypeOptions(withDefaults())
+                        .xssProtection(withDefaults())
+                        .cacheControl(withDefaults())
+                        .addHeaderWriter((req, res) -> res.setHeader("Server", ""))
+                )
+                .redirectToHttps(withDefaults())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
 
     }

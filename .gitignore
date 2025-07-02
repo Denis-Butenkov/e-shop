@@ -40,3 +40,6 @@ build/
 *.credentials
 application-prod.properties
 application-dev-secret.properties
+
+# SSL keystore – contains private key
+src/main/resources/keystore.p12
