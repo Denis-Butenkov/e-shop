@@ -1,11 +1,17 @@
 package com.lumastyle.eshop.config;
 
 import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.servers.ServerVariable;
+import io.swagger.v3.oas.models.servers.ServerVariables;
+import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,19 +30,55 @@ public class OpenApiConfig {
         SecurityRequirement securityRequirement = new SecurityRequirement()
                 .addList("bearerAuth");
 
+        // Server with variable BASE_URL
+        ServerVariable baseUrlVar = new ServerVariable()
+                ._default("https://localhost:8443")
+                .description("Base URL for the API");
+        ServerVariables vars = new ServerVariables();
+        vars.addServerVariable("baseUrl", baseUrlVar);
+
+        Server prodServer = new Server()
+                .url("{baseUrl}")
+                .description("Dynamic environment")
+                .variables(vars);
+
         return new OpenAPI()
-                // Server configuration for HTTPS
-                .addServersItem(new Server().url("https://localhost:8443"))
-                // Register security scheme
+                // Server configuration
+                .addServersItem(prodServer)
+                .addServersItem(new Server()
+                        .url("https://api.example.com")
+                        .description("Production API server"))
+
+                // Global components including a security scheme
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", bearerAuth)
                 )
-                // Apply security requirement
                 .addSecurityItem(securityRequirement)
+
+                // Tags grouping for clarity
+                .addTagsItem(new Tag().name("Auth").description("Authentication operations"))
+                .addTagsItem(new Tag().name("Products").description("Product management"))
+                .addTagsItem(new Tag().name("Cart").description("Shopping cart operations"))
+                .addTagsItem(new Tag().name("Orders").description("Order operations"))
+
+                // External docs linking
+                .externalDocs(new ExternalDocumentation()
+                        .description("GitHub repository")
+                        .url("https://github.com/NightmareFDD/e-shop"))
+
                 // API metadata
                 .info(new Info()
                         .title("E-commerce API")
-                        .version("v1")
-                        .description("REST API for e-commerce – Spring Boot + MongoDB"));
+                        .version("v1.0.0")
+                        .description("Complete REST API for e-commerce – Spring Boot")
+                        .termsOfService("https://example.com/terms")
+                        .contact(new Contact()
+                                .name("E-shop Project Team")
+                                .email("support@example.com")
+                                .url("https://example.com/support"))
+                        .license(new License()
+                                .name("Apache 2.0")
+                                .url("https://www.apache.org/licenses/LICENSE-2.0.html"))
+                );
     }
 }
