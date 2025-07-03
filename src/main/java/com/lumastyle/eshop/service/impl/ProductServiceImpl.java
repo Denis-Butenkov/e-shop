@@ -44,7 +44,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<ProductResponse> readProducts() {
-        log.info("Reading all foods");
+        log.info("Reading all products");
         return productRepository.findAll().stream().map(productMapper::toResponse).toList();
     }
 
@@ -52,23 +52,23 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse readProduct(String id) {
         log.info("Reading product with id: {}", id);
         ProductEntity existingProductEntity = productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Food not found with the id: " + id));
-        log.info("Food found successfully");
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with the id: " + id));
+        log.info("Product found successfully");
         return productMapper.toResponse(existingProductEntity);
     }
 
     @Override
     public void deleteProduct(String id) {
-        ProductEntity entity = findFoodById(id);
+        ProductEntity entity = findProductById(id);
 
         String imageUrl = entity.getImageUrl();
         String key = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
 
         boolean isFileDeleted = fileStorage.deleteFile(key);
-        validate(isFileDeleted, key);
+        ensureFileDeleted(isFileDeleted, key);
 
         productRepository.deleteById(id);
-        log.info("Food with id: {} deleted successfully (file key: {})", id, key);
+        log.info("Product with id: {} deleted successfully (file key: {})", id, key);
     }
 
 
@@ -81,7 +81,7 @@ public class ProductServiceImpl implements ProductService {
      * @param key           the S3 object key that was attempted to delete
      * @throws FileStorageException if deletion failed
      */
-    private static void validate(boolean isFileDeleted, String key) {
+    private static void ensureFileDeleted(boolean isFileDeleted, String key) {
         if (!isFileDeleted) {
             log.error("Failed to delete file with key {}", key);
             throw new FileStorageException("Could not delete file with key " + key);
@@ -96,9 +96,9 @@ public class ProductServiceImpl implements ProductService {
      * @return the found ProductEntity
      * @throws ResourceNotFoundException if no product with that id exists
      */
-    private ProductEntity findFoodById(String id) {
+    private ProductEntity findProductById(String id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Food not found with id " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id " + id));
     }
 
 }

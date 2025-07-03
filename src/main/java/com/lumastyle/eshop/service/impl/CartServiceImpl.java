@@ -70,7 +70,9 @@ public class CartServiceImpl implements CartService {
     // --- helper methods ---
 
     /**
-     * Gets the ID of the currently authenticated user.
+     * Retrieve the ID of the currently authenticated user.
+     *
+     * @return the logged-in user's ID
      */
     private String getLoggedUserId() {
         log.info("Getting logged in user ID");
@@ -78,7 +80,10 @@ public class CartServiceImpl implements CartService {
     }
 
     /**
-     * Loads the cart for the current user or throws if not found
+     * Load the cart for the currently authenticated user.
+     *
+     * @return the cart entity for the logged-in user
+     * @throws ResourceNotFoundException if the cart does not exist
      */
     private CartEntity loadCartOrThrow() {
         log.info("Loading cart for user: {}", getLoggedUserId());
@@ -87,7 +92,10 @@ public class CartServiceImpl implements CartService {
     }
 
     /**
-     * Increments the quantity of a given productID by 1.
+     * Increase the quantity of the given product by one.
+     *
+     * @param cart      the cart to modify
+     * @param productId the ID of the product to increment
      */
     private void incrementItem(CartEntity cart, String productId) {
         log.info("Incrementing item for productID: {}", productId);
@@ -97,8 +105,11 @@ public class CartServiceImpl implements CartService {
     }
 
     /**
-     * Decrements quantity for a given productID; removes key if quantity reaches 0.
-     * @return true if an item was present and changed
+     * Decrease the quantity for the given product and remove it when the count reaches zero.
+     *
+     * @param cart      the cart to modify
+     * @param productId the ID of the product to decrement
+     * @return true if the cart contained the product and was updated
      */
     private boolean decrementItem(CartEntity cart, String productId) {
         log.info("Decrementing item for productID: {}", productId);
@@ -112,7 +123,10 @@ public class CartServiceImpl implements CartService {
     }
 
     /**
-     * Helper to update quantity or remove the entry if it reaches zero.
+     * Update the quantity entry for the given product, removing it when it becomes zero.
+     *
+     * @param items     the map of product IDs to quantities
+     * @param productId the ID of the product being adjusted
      */
     private void updateItemQuantity(Map<String, Integer> items, String productId) {
         items.computeIfPresent(productId, (id, qty) -> qty > 1 ? qty - 1 : null);

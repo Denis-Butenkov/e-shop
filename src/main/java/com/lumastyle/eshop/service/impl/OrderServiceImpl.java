@@ -4,6 +4,7 @@ import com.lumastyle.eshop.dto.order.OrderRequest;
 import com.lumastyle.eshop.dto.order.OrderResponse;
 import com.lumastyle.eshop.entity.OrderEntity;
 import com.lumastyle.eshop.exception.GoPayIntegrationException;
+import com.lumastyle.eshop.exception.ResourceNotFoundException;
 import com.lumastyle.eshop.mapper.OrderMapper;
 import com.lumastyle.eshop.repository.CartRepository;
 import com.lumastyle.eshop.repository.OrderRepository;
@@ -126,7 +127,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public void updateOrderStatus(String orderId, String status) {
         OrderEntity entity = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
         entity.setOrderStatus(status);
         log.info("Order {} updated with status {}", orderId, status);
         orderRepository.save(entity);

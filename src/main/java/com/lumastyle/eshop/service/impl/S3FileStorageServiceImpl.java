@@ -98,8 +98,7 @@ public class S3FileStorageServiceImpl implements FileStorageService {
     }
 
     /**
-     * Checks the file name for invalid path sequences (“..”) and
-     * throws a BadRequestException if found.
+     * Validate the file name for path traversal sequences (“..”) and throw a BadRequestException if found.
      *
      * @param file the multipart file to validate
      * @throws BadRequestException if the file name contains “..”

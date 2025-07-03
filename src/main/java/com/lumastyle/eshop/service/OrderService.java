@@ -2,6 +2,7 @@ package com.lumastyle.eshop.service;
 
 import com.lumastyle.eshop.dto.order.OrderRequest;
 import com.lumastyle.eshop.dto.order.OrderResponse;
+import com.lumastyle.eshop.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,7 @@ public interface OrderService {
      *
      * @param orderId the unique identifier of the order to update
      * @param status  the new status to set (e.g., "Paid", "Cancelled")
+     * @throws ResourceNotFoundException if the order does not exist
      */
     void updateOrderStatus(String orderId, String status);
 }

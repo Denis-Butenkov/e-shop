@@ -6,6 +6,7 @@ import com.lumastyle.eshop.dto.order.OrderRequest;
 import com.lumastyle.eshop.dto.order.OrderResponse;
 import com.lumastyle.eshop.entity.OrderEntity;
 import com.lumastyle.eshop.exception.GoPayIntegrationException;
+import com.lumastyle.eshop.exception.ResourceNotFoundException;
 import com.lumastyle.eshop.mapper.OrderMapper;
 import com.lumastyle.eshop.repository.CartRepository;
 import com.lumastyle.eshop.repository.OrderRepository;
@@ -28,6 +29,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -313,5 +315,19 @@ class OrderServiceTest {
         // Act and Assert
         assertThrows(GoPayIntegrationException.class, () -> orderServiceImpl.getOrdersOfAllUsers());
         verify(orderRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("Test updateOrderStatus(String, String); given OrderRepository findById(Object) returns empty; then throw ResourceNotFoundException")
+    @Tag("ContributionFromDiffblue")
+    @ManagedByDiffblue
+    @MethodsUnderTest({"void OrderServiceImpl.updateOrderStatus(String, String)"})
+    void testUpdateOrderStatus_givenRepositoryReturnsEmpty_thenThrowResourceNotFoundException() {
+        // Arrange
+        when(orderRepository.findById(Mockito.<String>any())).thenReturn(Optional.empty());
+
+        // Act and Assert
+        assertThrows(ResourceNotFoundException.class, () -> orderServiceImpl.updateOrderStatus("42", "foo"));
+        verify(orderRepository).findById(eq("42"));
     }
 }
