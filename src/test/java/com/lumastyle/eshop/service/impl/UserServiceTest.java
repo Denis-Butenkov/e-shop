@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
@@ -28,6 +29,10 @@ class UserServiceTest {
 
     @Mock
     private UserMapper userMapper;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -75,14 +80,14 @@ class UserServiceTest {
 
         assertEquals("User with email: 'test@example.com' already exists", ex.getMessage());
         verify(userRepository, never()).save(any());
-        verify(userMapper, never()).toEntity(any());
+        verify(userMapper, never()).toEntity(any(), any());
     }
 
     @Test
     void registerUser_whenValid_shouldMapEntityAndSave() {
         when(userRepository.findByEmail(request.getEmail()))
                 .thenReturn(Optional.empty());
-        when(userMapper.toEntity(request)).thenReturn(entity);
+        when(userMapper.toEntity(request, passwordEncoder)).thenReturn(entity);
         when(userRepository.save(entity)).thenReturn(savedEntity);
         when(userMapper.toResponse(savedEntity)).thenReturn(response);
 
@@ -93,7 +98,7 @@ class UserServiceTest {
         assertEquals("Test User", result.getFullName());
         assertEquals("test@example.com", result.getEmail());
 
-        verify(userMapper).toEntity(request);
+        verify(userMapper).toEntity(request, passwordEncoder);
         verify(userRepository).save(entity);
         verify(userMapper).toResponse(savedEntity);
     }

@@ -10,6 +10,7 @@ import com.lumastyle.eshop.service.AuthFacade;
 import com.lumastyle.eshop.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -20,11 +21,12 @@ public class UserServiceImpl implements UserService {
     private final UserRepository repository;
     private final UserMapper mapper;
     private final AuthFacade authFacade;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserResponse registerUser(UserRequest request) {
         isUniqueValidation(request);
-        UserEntity newUserEntity = mapper.toEntity(request);
+        UserEntity newUserEntity = mapper.toEntity(request, passwordEncoder);
         newUserEntity = repository.save(newUserEntity);
         log.info("User registered successfully: {}", request.getEmail());
         return mapper.toResponse(newUserEntity);
