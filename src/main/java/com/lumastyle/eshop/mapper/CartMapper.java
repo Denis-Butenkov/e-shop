@@ -2,14 +2,19 @@ package com.lumastyle.eshop.mapper;
 
 import com.lumastyle.eshop.dto.cart.CartResponse;
 import com.lumastyle.eshop.entity.CartEntity;
+import org.mapstruct.Mapper;
 
+/**
+ * Mapper interface for converting between {@link CartEntity} entity and {@link CartResponse} DTO.
+ */
+@Mapper(componentModel = "spring")
 public interface CartMapper {
 
     /**
-     * Converts a CartEntity to a CartResponse DTO for client consumption.
+     * Maps a persisted {@link CartEntity} to a {@link CartResponse} DTO for client use.
      *
-     * @param cart the persisted cart entity
-     * @return the DTO summarizing the cart contents
+     * @param cart the {@link CartEntity} containing the user ID and a map of item IDs to quantities
+     * @return a {@link CartResponse} DTO with cart ID, user ID, and the items with their quantities
      */
     CartResponse toResponse (CartEntity cart);
 }
