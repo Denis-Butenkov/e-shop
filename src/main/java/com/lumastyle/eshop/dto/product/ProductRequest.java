@@ -1,5 +1,7 @@
 package com.lumastyle.eshop.dto.product;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,6 +25,7 @@ public class ProductRequest {
 
     @NotNull(message = "Price cannot be null.")
     @DecimalMin(value = "0.0", inclusive = false, message = "Price must be a positive number.")
+    @JsonSerialize(using = ToStringSerializer.class)
     private BigDecimal price;
 
     @NotBlank(message = "Category is required for a product.")

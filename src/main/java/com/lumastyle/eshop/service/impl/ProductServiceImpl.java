@@ -11,6 +11,8 @@ import com.lumastyle.eshop.service.FileStorageService;
 import com.lumastyle.eshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +29,7 @@ public class ProductServiceImpl implements ProductService {
 
 
     @Override
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductResponse addProduct(ProductRequest request, MultipartFile file) {
         log.info("Adding product: {}", request);
         String imageUrl;
@@ -43,12 +46,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable("products")
     public List<ProductResponse> readProducts() {
         log.info("Reading all products");
         return productRepository.findAll().stream().map(productMapper::toResponse).toList();
     }
 
     @Override
+    @CacheEvict(cacheNames = "products", allEntries = true)
     public ProductResponse readProduct(String id) {
         log.info("Reading product with id: {}", id);
         ProductEntity existingProductEntity = productRepository.findById(id)

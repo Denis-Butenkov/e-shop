@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .permitAll()
                         // public endpoints for products and orders
                         .requestMatchers(HttpMethod.GET,
+                                "/api/products",
                                 "/api/products/**",
                                 "/api/orders/all",
                                 "/api/orders/status/**")

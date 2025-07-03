@@ -137,7 +137,7 @@ class ProductServiceTest {
      */
     @Test
     void deleteProduct_success() {
-        entity.setImageUrl("http://host/path/file.png");
+        entity.setImageUrl("https://host/path/file.png");
         when(repository.findById("id123")).thenReturn(Optional.of(entity));
         when(fileStorage.deleteFile("file.png")).thenReturn(true);
 
@@ -152,7 +152,7 @@ class ProductServiceTest {
      */
     @Test
     void deleteProduct_fileDeletionFails_throws() {
-        entity.setImageUrl("http://host/path/img.jpg");
+        entity.setImageUrl("https://host/path/img.jpg");
         when(repository.findById("id123")).thenReturn(Optional.of(entity));
         when(fileStorage.deleteFile("img.jpg")).thenReturn(false);
 

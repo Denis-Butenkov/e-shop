@@ -3,9 +3,7 @@ package com.lumastyle.eshop.config;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
@@ -60,6 +58,7 @@ public class OpenApiConfig {
                 .addTagsItem(new Tag().name("Products").description("Product management"))
                 .addTagsItem(new Tag().name("Cart").description("Shopping cart operations"))
                 .addTagsItem(new Tag().name("Orders").description("Order operations"))
+                .addTagsItem(new Tag().name("Users").description("Registration operations"))
 
                 // External docs linking
                 .externalDocs(new ExternalDocumentation()
@@ -71,14 +70,6 @@ public class OpenApiConfig {
                         .title("E-commerce API")
                         .version("v1.0.0")
                         .description("Complete REST API for e-commerce – Spring Boot")
-                        .termsOfService("https://example.com/terms")
-                        .contact(new Contact()
-                                .name("E-shop Project Team")
-                                .email("support@example.com")
-                                .url("https://example.com/support"))
-                        .license(new License()
-                                .name("Apache 2.0")
-                                .url("https://www.apache.org/licenses/LICENSE-2.0.html"))
                 );
     }
 }

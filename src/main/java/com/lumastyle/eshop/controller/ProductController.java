@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/products")
 @CrossOrigin(origins = "*")
+@Tag(name = "Products", description = "Product management")
 public class ProductController {
 
     private static final String NAME_VALIDATION_PATTERN = "^[A-Za-z0-9\\-]+$";
@@ -61,7 +63,7 @@ public class ProductController {
                     schema = @Schema(implementation = ProductResponse.class)))
     @GetMapping
     public List<ProductResponse> readProducts() {
-        log.info("Received request for reading all foods");
+        log.info("Received request for reading all products");
         return productService.readProducts();
     }
 

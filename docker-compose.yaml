@@ -30,6 +30,13 @@ services:
     depends_on:
       - mongo
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:6379"
+
   app:
     build:
       context: .
@@ -43,6 +50,7 @@ services:
       - .env
     depends_on:
       - mongo
+      - redis
 
 volumes:
   mongo-data:
