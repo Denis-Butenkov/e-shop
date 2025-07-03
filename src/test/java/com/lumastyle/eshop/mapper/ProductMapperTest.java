@@ -3,20 +3,33 @@ package com.lumastyle.eshop.mapper;
 import com.lumastyle.eshop.dto.product.ProductRequest;
 import com.lumastyle.eshop.dto.product.ProductResponse;
 import com.lumastyle.eshop.entity.ProductEntity;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link ProductMapper},
+ * verifying mapping between {@link ProductRequest}, {@link ProductEntity}and {@link ProductResponse}.
+ */
+@ActiveProfiles("test")
 class ProductMapperTest {
 
     private final ProductMapper mapper = Mappers.getMapper(ProductMapper.class);
 
+    /**
+     * Verifies that toEntity maps fields from {@link ProductRequest} to {@link ProductEntity} correctly.
+     */
     @Test
+    @DisplayName("toEntity maps all fields correctly")
+    @Tag("Unit")
     void toEntity_mapsFields() {
-        ProductRequest request = new ProductRequest("Name", "Desc", new BigDecimal("2.50"), "Cat");
+        ProductRequest request = new ProductRequest("Name", "Desc", new BigDecimal("250.50"), "Cat");
 
         ProductEntity entity = mapper.toEntity(request);
 
@@ -28,7 +41,12 @@ class ProductMapperTest {
         assertEquals(request.getCategory(), entity.getCategory());
     }
 
+    /**
+     * Verifies that toResponse maps fields from {@link ProductEntity} to {@link ProductResponse} correctly.
+     */
     @Test
+    @DisplayName("toResponse maps all fields correctly")
+    @Tag("Unit")
     void toResponse_mapsFields() {
         ProductEntity entity = ProductEntity.builder()
                 .id("1")

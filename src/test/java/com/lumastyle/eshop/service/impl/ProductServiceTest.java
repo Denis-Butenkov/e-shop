@@ -9,6 +9,8 @@ import com.lumastyle.eshop.mapper.ProductMapper;
 import com.lumastyle.eshop.repository.ProductRepository;
 import com.lumastyle.eshop.service.FileStorageService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,11 +24,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for {@link ProductServiceImpl}.
+ * Unit tests for {@link ProductServiceImpl}, covering add, read, and delete operations.
  */
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +51,9 @@ class ProductServiceTest {
     private ProductEntity savedEntity;
     private ProductResponse response;
 
+    /**
+     * Initializes common test data before each test.
+     */
     @BeforeEach
     void setUp() {
         request = new ProductRequest("Name", "Desc", new BigDecimal("199.99"), "Tie");
@@ -69,6 +73,8 @@ class ProductServiceTest {
      * Test the successful addition of a product.
      */
     @Test
+    @DisplayName("addProduct returns response on success")
+    @Tag("Unit")
     void addProduct_success() {
         when(fileStorage.uploadFile(file)).thenReturn("http://img/url.jpg");
         when(mapper.toEntity(request)).thenReturn(entity);
@@ -84,21 +90,25 @@ class ProductServiceTest {
     }
 
     /**
-     * Test file upload failure throws FileStorageException.
+     * Test that a file upload failure throws FileStorageException.
      */
     @Test
+    @DisplayName("addProduct throws FileStorageException on upload failure")
+    @Tag("Unit")
     void addProduct_fileUploadFails_throws() {
         when(fileStorage.uploadFile(file)).thenThrow(new RuntimeException("fail"));
 
         assertThrows(FileStorageException.class, () -> service.addProduct(request, file));
         verify(fileStorage).uploadFile(file);
-        verifyNoMoreInteractions(repository, mapper);
+        verifyNoInteractions(repository, mapper);
     }
 
     /**
      * Test reading all products returns a mapped list.
      */
     @Test
+    @DisplayName("readProducts returns list of ProductResponse")
+    @Tag("Unit")
     void readProducts_returnsList() {
         List<ProductEntity> entities = List.of(entity);
         ProductResponse resp = new ProductResponse();
@@ -112,9 +122,11 @@ class ProductServiceTest {
     }
 
     /**
-     * Test reading existing product by id.
+     * Test reading an existing product by id.
      */
     @Test
+    @DisplayName("readProduct returns ProductResponse when entity exists")
+    @Tag("Unit")
     void readProduct_exists() {
         when(repository.findById("id123")).thenReturn(Optional.of(entity));
         when(mapper.toResponse(entity)).thenReturn(response);
@@ -127,6 +139,8 @@ class ProductServiceTest {
      * Test reading a non-existent product throws ResourceNotFoundException.
      */
     @Test
+    @DisplayName("readProduct throws ResourceNotFoundException when not found")
+    @Tag("Unit")
     void readProduct_notFound_throws() {
         when(repository.findById("nope")).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> service.readProduct("nope"));
@@ -136,6 +150,8 @@ class ProductServiceTest {
      * Test successful deletion of a product and its file.
      */
     @Test
+    @DisplayName("deleteProduct deletes file and entity on success")
+    @Tag("Unit")
     void deleteProduct_success() {
         entity.setImageUrl("https://host/path/file.png");
         when(repository.findById("id123")).thenReturn(Optional.of(entity));
@@ -151,6 +167,8 @@ class ProductServiceTest {
      * Test deletion failure when file deletion fails.
      */
     @Test
+    @DisplayName("deleteProduct throws FileStorageException on file delete failure")
+    @Tag("Unit")
     void deleteProduct_fileDeletionFails_throws() {
         entity.setImageUrl("https://host/path/img.jpg");
         when(repository.findById("id123")).thenReturn(Optional.of(entity));
@@ -165,6 +183,8 @@ class ProductServiceTest {
      * Test deletion of a non-existent product throws ResourceNotFoundException.
      */
     @Test
+    @DisplayName("deleteProduct throws ResourceNotFoundException when not found")
+    @Tag("Unit")
     void deleteProduct_notFound_throws() {
         when(repository.findById("bad")).thenReturn(Optional.empty());
         assertThrows(ResourceNotFoundException.class, () -> service.deleteProduct("bad"));
@@ -173,4 +193,3 @@ class ProductServiceTest {
         verify(repository, never()).deleteById(any());
     }
 }
-

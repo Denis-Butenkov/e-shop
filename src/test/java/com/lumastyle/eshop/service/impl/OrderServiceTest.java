@@ -1,7 +1,5 @@
 package com.lumastyle.eshop.service.impl;
 
-import com.diffblue.cover.annotations.ManagedByDiffblue;
-import com.diffblue.cover.annotations.MethodsUnderTest;
 import com.lumastyle.eshop.dto.order.OrderRequest;
 import com.lumastyle.eshop.dto.order.OrderResponse;
 import com.lumastyle.eshop.entity.OrderEntity;
@@ -10,54 +8,52 @@ import com.lumastyle.eshop.exception.ResourceNotFoundException;
 import com.lumastyle.eshop.mapper.OrderMapper;
 import com.lumastyle.eshop.repository.CartRepository;
 import com.lumastyle.eshop.repository.OrderRepository;
+import com.lumastyle.eshop.service.EmailService;
 import com.lumastyle.eshop.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.aot.DisabledInAotMode;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ContextConfiguration(classes = {OrderServiceImpl.class})
-@DisabledInAotMode
-@EnableConfigurationProperties
-@ExtendWith(SpringExtension.class)
-@PropertySource("classpath:application-test.properties")
+/**
+ * Unit tests for {@link OrderServiceImpl} ensuring correct behavior
+ * under various scenarios including error conditions.
+ */
+@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
-    @MockitoBean
-    private CartRepository cartRepository;
 
-    @MockitoBean
-    private OrderMapper orderMapper;
-
-    @MockitoBean
+    @Mock
     private OrderRepository orderRepository;
+    @Mock
+    private CartRepository cartRepository;
+    @Mock
+    private OrderMapper orderMapper;
+    @Mock
+    private UserService userService;
+    @Mock
+    private EmailService emailService;
 
-    @Autowired
+    @InjectMocks
     private OrderServiceImpl orderServiceImpl;
 
-    @MockitoBean
-    private UserService userService;
-
+    /**
+     * Creates a sample OrderEntity for use in tests.
+     *
+     * @return a fully populated OrderEntity instance
+     */
     private static OrderEntity getOrderEntity() {
         OrderEntity orderEntity = new OrderEntity();
         orderEntity.setAmount(10);
@@ -75,259 +71,202 @@ class OrderServiceTest {
     }
 
     /**
-     * Test {@link OrderServiceImpl#createOrderAndPayment(OrderRequest)}.
-     *
-     * <ul>
-     *   <li>Given {@link OrderRepository}.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#createOrderAndPayment(OrderRequest)}
+     * Verifies that an exception from the mapper is propagated
+     * when creating an order and payment.
      */
     @Test
-    @DisplayName("Test createOrderAndPayment(OrderRequest); given OrderRepository")
-    @Tag("ContributionFromDiffblue")
-    @MethodsUnderTest({
-            "com.lumastyle.eshop.dto.order.OrderResponse OrderServiceImpl.createOrderAndPayment(OrderRequest)"
-    })
-    void testCreateOrderAndPayment_givenOrderRepository() throws UnknownHostException {
+    @DisplayName("createOrderAndPayment throws when mapper fails")
+    @Tag("Unit")
+    void testCreateOrderAndPayment_givenMapperThrows() {
         try (MockedStatic<InetAddress> mockInetAddress = mockStatic(InetAddress.class)) {
-
-            // Arrange
-            mockInetAddress
-                    .when(() -> InetAddress.getAllByName(Mockito.<String>any()))
+            mockInetAddress.when(() -> InetAddress.getAllByName(anyString()))
                     .thenReturn(new InetAddress[]{null});
-            when(orderMapper.toEntity(Mockito.<OrderRequest>any()))
+            when(orderMapper.toEntity(any(OrderRequest.class)))
                     .thenThrow(new GoPayIntegrationException("An error occurred"));
 
-            // Act and Assert
-            assertThrows(
-                    GoPayIntegrationException.class,
+            assertThrows(GoPayIntegrationException.class,
                     () -> orderServiceImpl.createOrderAndPayment(new OrderRequest()));
-            verify(orderMapper).toEntity(isA(OrderRequest.class));
+
+            verify(orderMapper).toEntity(any(OrderRequest.class));
         }
     }
 
     /**
-     * Test {@link OrderServiceImpl#createOrderAndPayment(OrderRequest)}.
-     *
-     * <ul>
-     *   <li>Then calls {@link OrderRepository#save(Object)}.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#createOrderAndPayment(OrderRequest)}
+     * Ensures that the repository save is invoked and its exception propagated
+     * when saving a mapped order fails.
      */
     @Test
-    @DisplayName("Test createOrderAndPayment(OrderRequest); then calls save(Object)")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"OrderResponse OrderServiceImpl.createOrderAndPayment(OrderRequest)"})
-    void testCreateOrderAndPayment_thenCallsSave() throws UnknownHostException {
+    @DisplayName("createOrderAndPayment calls save and propagates error")
+    @Tag("Unit")
+    void testCreateOrderAndPayment_thenCallsSave() {
         try (MockedStatic<InetAddress> mockInetAddress = mockStatic(InetAddress.class)) {
-
-            // Arrange
-            mockInetAddress
-                    .when(() -> InetAddress.getAllByName(Mockito.<String>any()))
+            mockInetAddress.when(() -> InetAddress.getAllByName(anyString()))
                     .thenReturn(new InetAddress[]{null});
-            when(orderRepository.save(Mockito.<OrderEntity>any()))
-                    .thenThrow(new GoPayIntegrationException("An error occurred"));
+            OrderEntity entity = getOrderEntity();
+            when(orderMapper.toEntity(any(OrderRequest.class))).thenReturn(entity);
+            when(orderRepository.save(any(OrderEntity.class)))
+                    .thenThrow(new GoPayIntegrationException("Integration error"));
 
-            OrderEntity orderEntity = getOrderEntity();
-            when(orderMapper.toEntity(Mockito.<OrderRequest>any())).thenReturn(orderEntity);
-
-            // Act and Assert
-            assertThrows(
-                    GoPayIntegrationException.class,
+            assertThrows(GoPayIntegrationException.class,
                     () -> orderServiceImpl.createOrderAndPayment(new OrderRequest()));
-            verify(orderMapper).toEntity(isA(OrderRequest.class));
-            verify(orderRepository).save(isA(OrderEntity.class));
+
+            verify(orderMapper).toEntity(any(OrderRequest.class));
+            verify(orderRepository).save(any(OrderEntity.class));
         }
     }
 
     /**
-     * Test {@link OrderServiceImpl#getUserOrders()}.
-     *
-     * <p>Method under test: {@link OrderServiceImpl#getUserOrders()}
+     * Verifies that getUserOrders propagates repository exceptions.
      */
     @Test
-    @DisplayName("Test getUserOrders()")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"List OrderServiceImpl.getUserOrders()"})
-    void testGetUserOrders() {
-        // Arrange
-        when(orderRepository.findByUserId(Mockito.<String>any()))
-                .thenThrow(new GoPayIntegrationException("An error occurred"));
+    @DisplayName("getUserOrders throws when repository fails")
+    @Tag("Unit")
+    void testGetUserOrders_throwsGoPayIntegrationException() {
         when(userService.getCurrentUserId()).thenReturn("42");
+        when(orderRepository.findByUserId(anyString()))
+                .thenThrow(new GoPayIntegrationException("Error"));
 
-        // Act and Assert
         assertThrows(GoPayIntegrationException.class, () -> orderServiceImpl.getUserOrders());
-        verify(orderRepository).findByUserId(eq("42"));
+
         verify(userService).getCurrentUserId();
+        verify(orderRepository).findByUserId("42");
     }
 
     /**
-     * Test {@link OrderServiceImpl#getUserOrders()}.
-     *
-     * <ul>
-     *   <li>Given {@link OrderRepository}.
-     *   <li>Then throw {@link GoPayIntegrationException}.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#getUserOrders()}
+     * Ensures getUserOrders returns an empty list when no orders exist.
      */
     @Test
-    @DisplayName("Test getUserOrders(); given OrderRepository; then throw GoPayIntegrationException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"List OrderServiceImpl.getUserOrders()"})
-    void testGetUserOrders_givenOrderRepository_thenThrowGoPayIntegrationException() {
-        // Arrange
-        when(userService.getCurrentUserId())
-                .thenThrow(new GoPayIntegrationException("An error occurred"));
-
-        // Act and Assert
-        assertThrows(GoPayIntegrationException.class, () -> orderServiceImpl.getUserOrders());
-        verify(userService).getCurrentUserId();
-    }
-
-    /**
-     * Test {@link OrderServiceImpl#getUserOrders()}.
-     *
-     * <ul>
-     *   <li>Then return Empty.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#getUserOrders()}
-     */
-    @Test
-    @DisplayName("Test getUserOrders(); then return Empty")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"List OrderServiceImpl.getUserOrders()"})
+    @DisplayName("getUserOrders returns empty list when none")
+    @Tag("Unit")
     void testGetUserOrders_thenReturnEmpty() {
-        // Arrange
-        when(orderRepository.findByUserId(Mockito.<String>any())).thenReturn(new ArrayList<>());
         when(userService.getCurrentUserId()).thenReturn("42");
+        when(orderRepository.findByUserId(anyString()))
+                .thenReturn(Collections.emptyList());
 
-        // Act
-        List<OrderResponse> actualUserOrders = orderServiceImpl.getUserOrders();
+        List<OrderResponse> responses = orderServiceImpl.getUserOrders();
 
-        // Assert
-        verify(orderRepository).findByUserId(eq("42"));
         verify(userService).getCurrentUserId();
-        assertTrue(actualUserOrders.isEmpty());
+        verify(orderRepository).findByUserId("42");
+        assertTrue(responses.isEmpty());
     }
 
     /**
-     * Test {@link OrderServiceImpl#removeOrder(String)}.
-     *
-     * <ul>
-     *   <li>Given {@link OrderRepository} {@link OrderRepository#deleteById(Object)} does nothing.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#removeOrder(String)}
+     * Ensures removeOrder does not throw when deleteById succeeds.
      */
     @Test
-    @DisplayName("Test removeOrder(String); given OrderRepository deleteById(Object) does nothing")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"void OrderServiceImpl.removeOrder(String)"})
-    void testRemoveOrder_givenOrderRepositoryDeleteByIdDoesNothing() {
-        // Arrange
-        doNothing().when(orderRepository).deleteById(Mockito.<String>any());
-
-        // Act
+    @DisplayName("removeOrder does nothing on successful delete")
+    @Tag("Unit")
+    void testRemoveOrder_givenRepositoryDeleteByIdDoesNothing() {
+        doNothing().when(orderRepository).deleteById(anyString());
         orderServiceImpl.removeOrder("42");
-
-        // Assert
-        verify(orderRepository).deleteById(eq("42"));
+        verify(orderRepository).deleteById("42");
     }
 
     /**
-     * Test {@link OrderServiceImpl#removeOrder(String)}.
-     *
-     * <ul>
-     *   <li>Then throw {@link GoPayIntegrationException}.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#removeOrder(String)}
+     * Verifies removeOrder propagates exceptions from deleteById.
      */
     @Test
-    @DisplayName("Test removeOrder(String); then throw GoPayIntegrationException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"void OrderServiceImpl.removeOrder(String)"})
+    @DisplayName("removeOrder throws when delete fails")
+    @Tag("Unit")
     void testRemoveOrder_thenThrowGoPayIntegrationException() {
-        // Arrange
-        doThrow(new GoPayIntegrationException("An error occurred"))
-                .when(orderRepository)
-                .deleteById(Mockito.<String>any());
-
-        // Act and Assert
+        doThrow(new GoPayIntegrationException("Error"))
+                .when(orderRepository).deleteById(anyString());
         assertThrows(GoPayIntegrationException.class, () -> orderServiceImpl.removeOrder("42"));
-        verify(orderRepository).deleteById(eq("42"));
+        verify(orderRepository).deleteById("42");
     }
 
     /**
-     * Test {@link OrderServiceImpl#getOrdersOfAllUsers()}.
-     *
-     * <ul>
-     *   <li>Then return Empty.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#getOrdersOfAllUsers()}
+     * Ensures getOrdersOfAllUsers returns an empty list when the repository is empty.
      */
     @Test
-    @DisplayName("Test getOrdersOfAllUsers(); then return Empty")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"List OrderServiceImpl.getOrdersOfAllUsers()"})
+    @DisplayName("getOrdersOfAllUsers returns empty list")
+    @Tag("Unit")
     void testGetOrdersOfAllUsers_thenReturnEmpty() {
-        // Arrange
-        when(orderRepository.findAll()).thenReturn(new ArrayList<>());
+        when(orderRepository.findAll()).thenReturn(Collections.emptyList());
 
-        // Act
-        List<OrderResponse> actualOrdersOfAllUsers = orderServiceImpl.getOrdersOfAllUsers();
+        List<OrderResponse> responses = orderServiceImpl.getOrdersOfAllUsers();
 
-        // Assert
         verify(orderRepository).findAll();
-        assertTrue(actualOrdersOfAllUsers.isEmpty());
+        assertTrue(responses.isEmpty());
     }
 
     /**
-     * Test {@link OrderServiceImpl#getOrdersOfAllUsers()}.
-     *
-     * <ul>
-     *   <li>Then throw {@link GoPayIntegrationException}.
-     * </ul>
-     *
-     * <p>Method under test: {@link OrderServiceImpl#getOrdersOfAllUsers()}
+     * Verifies getOrdersOfAllUsers propagates repository exceptions.
      */
     @Test
-    @DisplayName("Test getOrdersOfAllUsers(); then throw GoPayIntegrationException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"List OrderServiceImpl.getOrdersOfAllUsers()"})
+    @DisplayName("getOrdersOfAllUsers throws when repository fails")
+    @Tag("Unit")
     void testGetOrdersOfAllUsers_thenThrowGoPayIntegrationException() {
-        // Arrange
-        when(orderRepository.findAll()).thenThrow(new GoPayIntegrationException("An error occurred"));
-
-        // Act and Assert
+        when(orderRepository.findAll()).thenThrow(new GoPayIntegrationException("Error"));
         assertThrows(GoPayIntegrationException.class, () -> orderServiceImpl.getOrdersOfAllUsers());
         verify(orderRepository).findAll();
     }
 
+    /**
+     * Ensures updateOrderStatus throws when an order is not found.
+     */
     @Test
-    @DisplayName("Test updateOrderStatus(String, String); given OrderRepository findById(Object) returns empty; then throw ResourceNotFoundException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"void OrderServiceImpl.updateOrderStatus(String, String)"})
+    @DisplayName("updateOrderStatus throws when order not found")
+    @Tag("Unit")
     void testUpdateOrderStatus_givenRepositoryReturnsEmpty_thenThrowResourceNotFoundException() {
-        // Arrange
-        when(orderRepository.findById(Mockito.<String>any())).thenReturn(Optional.empty());
+        when(orderRepository.findById(anyString())).thenReturn(Optional.empty());
+        assertThrows(ResourceNotFoundException.class,
+                () -> orderServiceImpl.updateOrderStatus("42", "foo"));
+        verify(orderRepository).findById("42");
+    }
 
-        // Act and Assert
-        assertThrows(ResourceNotFoundException.class, () -> orderServiceImpl.updateOrderStatus("42", "foo"));
-        verify(orderRepository).findById(eq("42"));
+    /**
+     * Verifies updateOrderStatus updates the status and saves the entity.
+     */
+    @Test
+    @DisplayName("updateOrderStatus updates and saves when order found")
+    @Tag("Unit")
+    void testUpdateOrderStatus_updatesAndSaves() {
+        OrderEntity entity = getOrderEntity();
+        when(orderRepository.findById(anyString())).thenReturn(Optional.of(entity));
+        when(orderRepository.save(any(OrderEntity.class))).thenReturn(entity);
+
+        orderServiceImpl.updateOrderStatus("42", "newStatus");
+
+        verify(orderRepository).findById("42");
+        verify(orderRepository).save(entity);
+        assertEquals("newStatus", entity.getOrderStatus());
+    }
+
+    /**
+     * Ensures verifyPayment sends confirmation email and clears the cart on payment success.
+     */
+    @Test
+    @DisplayName("verifyPayment processes payment and clears cart")
+    @Tag("Unit")
+    void testVerifyPayment_paid_sendsEmailAndClearsCart() {
+        OrderEntity order = getOrderEntity();
+        when(orderRepository.findByGopayPaymentId("gp1")).thenReturn(Optional.of(order));
+        Map<String, String> data = new HashMap<>();
+        data.put("paymentId", "gp1");
+
+        orderServiceImpl.verifyPayment(data, "Paid");
+
+        verify(emailService).sendPaymentConfirmation(
+                eq(order.getEmail()),
+                contains(order.getId()),
+                contains("objednávku"));
+        verify(cartRepository).deleteByUserId(order.getUserId());
+    }
+
+    /**
+     * Verifies verifyPayment throws when the order is not found.
+     */
+    @Test
+    @DisplayName("verifyPayment throws when order not found")
+    @Tag("Unit")
+    void testVerifyPayment_orderNotFound_throws() {
+        when(orderRepository.findByGopayPaymentId(anyString()))
+                .thenReturn(Optional.empty());
+        Map<String, String> data = new HashMap<>();
+        data.put("paymentId", "gpX");
+
+        assertThrows(GoPayIntegrationException.class,
+                () -> orderServiceImpl.verifyPayment(data, "Paid"));
     }
 }

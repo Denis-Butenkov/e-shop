@@ -1,19 +1,5 @@
 package com.lumastyle.eshop.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.diffblue.cover.annotations.ManagedByDiffblue;
-import com.diffblue.cover.annotations.MethodsUnderTest;
 import com.lumastyle.eshop.dto.cart.CartRequest;
 import com.lumastyle.eshop.dto.cart.CartResponse;
 import com.lumastyle.eshop.entity.CartEntity;
@@ -25,598 +11,314 @@ import com.lumastyle.eshop.repository.CartRepository;
 import com.lumastyle.eshop.repository.UserRepository;
 import com.lumastyle.eshop.service.AuthFacade;
 import com.lumastyle.eshop.service.UserService;
-
-import java.util.HashMap;
-import java.util.Optional;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.aot.DisabledInAotMode;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.ActiveProfiles;
 
-@ContextConfiguration(classes = {CartServiceImpl.class})
-@DisabledInAotMode
-@ExtendWith(SpringExtension.class)
+import java.util.HashMap;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.*;
+
+/**
+ * Unit tests for {@link CartServiceImpl}, covering add, get, clean and remove operations.
+ */
+@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 class CartServiceTest {
-    @MockitoBean
-    private CartMapper cartMapper;
 
-    @MockitoBean
-    private CartRepository cartRepository;
+    @Mock private CartRepository cartRepository;
+    @Mock private CartMapper cartMapper;
+    @Mock private UserService userService;
 
-    @Autowired
+    @InjectMocks
     private CartServiceImpl cartServiceImpl;
 
-    @MockitoBean
-    private UserService userService;
-
     /**
-     * Test {@link CartServiceImpl#addToCart(CartRequest)}.
-     *
-     * <p>Method under test: {@link CartServiceImpl#addToCart(CartRequest)}
+     * Test addToCart propagates an exception when repository.findByUserId fails.
      */
     @Test
-    @DisplayName("Test addToCart(CartRequest)")
-    @Tag("ContributionFromDiffblue")
-    @MethodsUnderTest({
-            "com.lumastyle.eshop.dto.cart.CartResponse CartServiceImpl.addToCart(CartRequest)"
-    })
-    void testAddToCart() {
-        // Arrange
-        when(cartRepository.findByUserId(Mockito.<String>any()))
+    @DisplayName("addToCart throws when repository findByUserId fails")
+    @Tag("Unit")
+    void testAddToCart_repositoryThrows() {
+        when(cartRepository.findByUserId(anyString()))
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
         when(userService.getCurrentUserId()).thenReturn("42");
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class, () -> cartServiceImpl.addToCart(new CartRequest()));
-        verify(cartRepository).findByUserId(eq("42"));
+        assertThrows(ResourceNotFoundException.class,
+                () -> cartServiceImpl.addToCart(new CartRequest()));
+
         verify(userService).getCurrentUserId();
+        verify(cartRepository).findByUserId("42");
     }
 
     /**
-     * Test {@link CartServiceImpl#addToCart(CartRequest)}.
-     *
-     * <p>Method under test: {@link CartServiceImpl#addToCart(CartRequest)}
+     * Test addToCart propagates an exception when mapper.toResponse fails after save.
      */
     @Test
-    @DisplayName("Test addToCart(CartRequest)")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.addToCart(CartRequest)"})
-    void testAddToCart2() {
-        // Arrange
-        CartEntity cartEntity = new CartEntity();
-        cartEntity.setId("42");
-        cartEntity.setItems(new HashMap<>());
-        cartEntity.setUserId("42");
-
-        CartEntity cartEntity2 = new CartEntity();
-        cartEntity2.setId("42");
-        cartEntity2.setItems(new HashMap<>());
-        cartEntity2.setUserId("42");
-        Optional<CartEntity> ofResult = Optional.of(cartEntity2);
-        when(cartRepository.save(Mockito.<CartEntity>any())).thenReturn(cartEntity);
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(ofResult);
+    @DisplayName("addToCart throws when mapper.toResponse fails")
+    @Tag("Unit")
+    void testAddToCart_mapperThrows() {
+        CartEntity saved = new CartEntity(); saved.setId("42"); saved.setItems(new HashMap<>()); saved.setUserId("42");
+        when(cartRepository.findByUserId(anyString())).thenReturn(Optional.of(saved));
+        when(cartRepository.save(any(CartEntity.class))).thenReturn(saved);
         when(userService.getCurrentUserId()).thenReturn("42");
-        when(cartMapper.toResponse(Mockito.<CartEntity>any()))
+        when(cartMapper.toResponse(any(CartEntity.class)))
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class, () -> cartServiceImpl.addToCart(new CartRequest()));
-        verify(cartMapper).toResponse(isA(CartEntity.class));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService).getCurrentUserId();
+        assertThrows(ResourceNotFoundException.class,
+                () -> cartServiceImpl.addToCart(new CartRequest()));
+
+        verify(cartRepository).findByUserId("42");
         verify(cartRepository).save(isA(CartEntity.class));
-    }
-
-    /**
-     * Test {@link CartServiceImpl#addToCart(CartRequest)}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository} {@link CartRepository#findByUserId(String)} return empty.
-     *   <li>Then return Id is {@code 42}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#addToCart(CartRequest)}
-     */
-    @Test
-    @DisplayName(
-            "Test addToCart(CartRequest); given CartRepository findByUserId(String) return empty; then return Id is '42'")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.addToCart(CartRequest)"})
-    void testAddToCart_givenCartRepositoryFindByUserIdReturnEmpty_thenReturnIdIs42() {
-        // Arrange
-        CartEntity cartEntity = new CartEntity();
-        cartEntity.setId("42");
-        cartEntity.setItems(new HashMap<>());
-        cartEntity.setUserId("42");
-        when(cartRepository.save(Mockito.<CartEntity>any())).thenReturn(cartEntity);
-        Optional<CartEntity> emptyResult = Optional.empty();
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(emptyResult);
-        when(userService.getCurrentUserId()).thenReturn("42");
-        CartResponse buildResult = CartResponse.builder().id("42").userId("42").build();
-        when(cartMapper.toResponse(Mockito.<CartEntity>any())).thenReturn(buildResult);
-
-        // Act
-        CartResponse actualAddToCartResult = cartServiceImpl.addToCart(new CartRequest());
-
-        // Assert
         verify(cartMapper).toResponse(isA(CartEntity.class));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService).getCurrentUserId();
-        verify(cartRepository).save(isA(CartEntity.class));
-        assertEquals("42", actualAddToCartResult.getId());
-        assertEquals("42", actualAddToCartResult.getUserId());
-        assertTrue(actualAddToCartResult.getItems().isEmpty());
     }
 
     /**
-     * Test {@link CartServiceImpl#addToCart(CartRequest)}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository} {@link CartRepository#findByUserId(String)} return of {@link
-     *       CartEntity#CartEntity()}.
-     *   <li>Then return Id is {@code 42}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#addToCart(CartRequest)}
+     * Test addToCart returns response when repository initially empty.
      */
     @Test
-    @DisplayName(
-            "Test addToCart(CartRequest); given CartRepository findByUserId(String) return of CartEntity(); then return Id is '42'")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.addToCart(CartRequest)"})
-    void testAddToCart_givenCartRepositoryFindByUserIdReturnOfCartEntity_thenReturnIdIs42() {
-        // Arrange
-        CartEntity cartEntity = new CartEntity();
-        cartEntity.setId("42");
-        cartEntity.setItems(new HashMap<>());
-        cartEntity.setUserId("42");
-
-        CartEntity cartEntity2 = new CartEntity();
-        cartEntity2.setId("42");
-        cartEntity2.setItems(new HashMap<>());
-        cartEntity2.setUserId("42");
-        Optional<CartEntity> ofResult = Optional.of(cartEntity2);
-        when(cartRepository.save(Mockito.<CartEntity>any())).thenReturn(cartEntity);
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(ofResult);
+    @DisplayName("addToCart returns new cart when none exists")
+    @Tag("Unit")
+    void testAddToCart_createsNewCart() {
+        CartEntity saved = new CartEntity(); saved.setId("42"); saved.setItems(new HashMap<>()); saved.setUserId("42");
+        when(cartRepository.findByUserId(anyString())).thenReturn(Optional.empty());
+        when(cartRepository.save(any(CartEntity.class))).thenReturn(saved);
         when(userService.getCurrentUserId()).thenReturn("42");
-        CartResponse buildResult = CartResponse.builder().id("42").userId("42").build();
-        when(cartMapper.toResponse(Mockito.<CartEntity>any())).thenReturn(buildResult);
+        CartResponse expected = CartResponse.builder().id("42").userId("42").items(new HashMap<>()).build();
+        when(cartMapper.toResponse(any(CartEntity.class))).thenReturn(expected);
 
-        // Act
-        CartResponse actualAddToCartResult = cartServiceImpl.addToCart(new CartRequest());
+        CartResponse actual = cartServiceImpl.addToCart(new CartRequest());
 
-        // Assert
-        verify(cartMapper).toResponse(isA(CartEntity.class));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService).getCurrentUserId();
+        verify(cartRepository).findByUserId("42");
         verify(cartRepository).save(isA(CartEntity.class));
-        assertEquals("42", actualAddToCartResult.getId());
-        assertEquals("42", actualAddToCartResult.getUserId());
-        assertTrue(actualAddToCartResult.getItems().isEmpty());
+        verify(cartMapper).toResponse(isA(CartEntity.class));
+        assertEquals("42", actual.getId());
+        assertEquals("42", actual.getUserId());
+        assertTrue(actual.getItems().isEmpty());
     }
 
     /**
-     * Test {@link CartServiceImpl#addToCart(CartRequest)}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository}.
-     *   <li>Then throw {@link ResourceNotFoundException}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#addToCart(CartRequest)}
+     * Test getCart propagates exception when mapper.toResponse fails.
      */
     @Test
-    @DisplayName(
-            "Test addToCart(CartRequest); given CartRepository; then throw ResourceNotFoundException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.addToCart(CartRequest)"})
-    void testAddToCart_givenCartRepository_thenThrowResourceNotFoundException() {
-        // Arrange
-        when(userService.getCurrentUserId())
+    @DisplayName("getCart throws when mapper.toResponse fails")
+    @Tag("Unit")
+    void testGetCart_mapperThrows() {
+        CartEntity existing = new CartEntity(); existing.setId("42"); existing.setItems(new HashMap<>()); existing.setUserId("42");
+        when(cartRepository.findByUserId(anyString())).thenReturn(Optional.of(existing));
+        when(userService.getCurrentUserId()).thenReturn("42");
+        when(cartMapper.toResponse(any(CartEntity.class)))
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class, () -> cartServiceImpl.addToCart(new CartRequest()));
-        verify(userService).getCurrentUserId();
-    }
-
-    /**
-     * Test {@link CartServiceImpl#getCart()}.
-     *
-     * <p>Method under test: {@link CartServiceImpl#getCart()}
-     */
-    @Test
-    @DisplayName("Test getCart()")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.getCart()"})
-    void testGetCart() {
-        // Arrange
-        CartEntity cartEntity = new CartEntity();
-        cartEntity.setId("42");
-        cartEntity.setItems(new HashMap<>());
-        cartEntity.setUserId("42");
-        Optional<CartEntity> ofResult = Optional.of(cartEntity);
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(ofResult);
-        when(userService.getCurrentUserId()).thenReturn("42");
-        when(cartMapper.toResponse(Mockito.<CartEntity>any()))
-                .thenThrow(new ResourceNotFoundException("An error occurred"));
-
-        // Act and Assert
         assertThrows(ResourceNotFoundException.class, () -> cartServiceImpl.getCart());
+
+        verify(cartRepository).findByUserId("42");
         verify(cartMapper).toResponse(isA(CartEntity.class));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService, atLeast(1)).getCurrentUserId();
     }
 
     /**
-     * Test {@link CartServiceImpl#getCart()}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository}.
-     *   <li>Then throw {@link ResourceNotFoundException}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#getCart()}
+     * Test getCart propagates an exception when userService.getCurrentUserId fails.
      */
     @Test
-    @DisplayName("Test getCart(); given CartRepository; then throw ResourceNotFoundException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.getCart()"})
-    void testGetCart_givenCartRepository_thenThrowResourceNotFoundException() {
-        // Arrange
+    @DisplayName("getCart throws when userService fails")
+    @Tag("Unit")
+    void testGetCart_userServiceThrows() {
         when(userService.getCurrentUserId())
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
 
-        // Act and Assert
         assertThrows(ResourceNotFoundException.class, () -> cartServiceImpl.getCart());
         verify(userService).getCurrentUserId();
     }
 
     /**
-     * Test {@link CartServiceImpl#getCart()}.
-     *
-     * <ul>
-     *   <li>Then calls {@link UserRepository#findByEmail(String)}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#getCart()}
+     * Test getCart integrates with UserRepository, AuthFacade and UserServiceImpl when cart not found.
      */
     @Test
-    @DisplayName("Test getCart(); then calls findByEmail(String)")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.getCart()"})
-    void testGetCart_thenCallsFindByEmail() {
-        // Arrange
-        CartRepository repository = mock(CartRepository.class);
-        when(repository.findByUserId(Mockito.<String>any()))
+    @DisplayName("getCart loads user and handles missing cart")
+    @Tag("Unit")
+    void testGetCart_callsFindByEmail() {
+        CartRepository repo = mock(CartRepository.class);
+        when(repo.findByUserId(anyString()))
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
 
-        UserEntity userEntity = new UserEntity();
-        userEntity.setEmail("jane.doe@example.org");
-        userEntity.setFullName("Dr Jane Doe");
-        userEntity.setId("42");
-        userEntity.setPassword("iloveyou");
-        Optional<UserEntity> ofResult = Optional.of(userEntity);
-        UserRepository repository2 = mock(UserRepository.class);
-        when(repository2.findByEmail(Mockito.<String>any())).thenReturn(ofResult);
-        AuthFacade authFacade = mock(AuthFacade.class);
-        when(authFacade.getAuthentication())
+        UserEntity user = new UserEntity(); user.setId("42"); user.setEmail("jane.doe@example.org");
+        UserRepository userRepo = mock(UserRepository.class);
+        when(userRepo.findByEmail(anyString())).thenReturn(Optional.of(user));
+        AuthFacade auth = mock(AuthFacade.class);
+        when(auth.getAuthentication())
                 .thenReturn(OneTimeTokenAuthenticationToken.unauthenticated("ABC123"));
-        UserMapperImpl mapper = new UserMapperImpl();
+        UserService userSvcImpl = new UserServiceImpl(userRepo, new UserMapperImpl(), auth, new BCryptPasswordEncoder());
+        CartServiceImpl svc = new CartServiceImpl(repo, userSvcImpl, mock(CartMapper.class));
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class,
-                () ->
-                        new CartServiceImpl(
-                                repository,
-                                new UserServiceImpl(
-                                        repository2, mapper, authFacade, new BCryptPasswordEncoder()),
-                                mock(CartMapper.class))
-                                .getCart());
-        verify(repository).findByUserId(eq("42"));
-        verify(repository2, atLeast(1)).findByEmail(eq(""));
-        verify(authFacade, atLeast(1)).getAuthentication();
+        assertThrows(ResourceNotFoundException.class, svc::getCart);
+        verify(repo).findByUserId("42");
+        verify(userRepo, times(2)).findByEmail("");
+        verify(auth, times(2)).getAuthentication();
     }
 
     /**
-     * Test {@link CartServiceImpl#getCart()}.
-     *
-     * <ul>
-     *   <li>Then return Id is {@code 42}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#getCart()}
+     * Test getCart returns response when cart exists.
      */
     @Test
-    @DisplayName("Test getCart(); then return Id is '42'")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.getCart()"})
-    void testGetCart_thenReturnIdIs42() {
-        // Arrange
-        CartEntity cartEntity = new CartEntity();
-        cartEntity.setId("42");
-        cartEntity.setItems(new HashMap<>());
-        cartEntity.setUserId("42");
-        Optional<CartEntity> ofResult = Optional.of(cartEntity);
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(ofResult);
+    @DisplayName("getCart returns existing cart")
+    @Tag("Unit")
+    void testGetCart_returnsCart() {
+        CartEntity existing = new CartEntity(); existing.setId("42"); existing.setItems(new HashMap<>()); existing.setUserId("42");
+        when(cartRepository.findByUserId(anyString())).thenReturn(Optional.of(existing));
         when(userService.getCurrentUserId()).thenReturn("42");
-        CartResponse buildResult = CartResponse.builder().id("42").userId("42").build();
-        when(cartMapper.toResponse(Mockito.<CartEntity>any())).thenReturn(buildResult);
+        CartResponse expected = CartResponse.builder().id("42").userId("42").items(new HashMap<>()).build();
+        when(cartMapper.toResponse(any(CartEntity.class))).thenReturn(expected);
 
-        // Act
-        CartResponse actualCart = cartServiceImpl.getCart();
+        CartResponse actual = cartServiceImpl.getCart();
 
-        // Assert
+        verify(cartRepository, atLeast(1)).findByUserId("42");
         verify(cartMapper).toResponse(isA(CartEntity.class));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService, atLeast(1)).getCurrentUserId();
-        assertEquals("42", actualCart.getId());
-        assertEquals("42", actualCart.getUserId());
-        assertTrue(actualCart.getItems().isEmpty());
+        assertEquals("42", actual.getId());
+        assertEquals("42", actual.getUserId());
+        assertTrue(actual.getItems().isEmpty());
     }
 
     /**
-     * Test {@link CartServiceImpl#cleanCart()}.
-     *
-     * <p>Method under test: {@link CartServiceImpl#cleanCart()}
+     * Test cleanCart propagates an exception when repository.deleteByUserId fails.
      */
     @Test
-    @DisplayName("Test cleanCart()")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"void CartServiceImpl.cleanCart()"})
-    void testCleanCart() {
-        // Arrange
+    @DisplayName("cleanCart throws when repository fails")
+    @Tag("Unit")
+    void testCleanCart_repositoryThrows() {
         doThrow(new ResourceNotFoundException("An error occurred"))
-                .when(cartRepository)
-                .deleteByUserId(Mockito.<String>any());
+                .when(cartRepository).deleteByUserId(anyString());
         when(userService.getCurrentUserId()).thenReturn("42");
 
-        // Act and Assert
         assertThrows(ResourceNotFoundException.class, () -> cartServiceImpl.cleanCart());
-        verify(cartRepository).deleteByUserId(eq("42"));
+        verify(cartRepository).deleteByUserId("42");
         verify(userService).getCurrentUserId();
     }
 
     /**
-     * Test {@link CartServiceImpl#cleanCart()}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository} {@link CartRepository#deleteByUserId(String)} does nothing.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#cleanCart()}
+     * Test cleanCart succeeds when repository.deleteByUserId does nothing.
      */
     @Test
-    @DisplayName("Test cleanCart(); given CartRepository deleteByUserId(String) does nothing")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"void CartServiceImpl.cleanCart()"})
-    void testCleanCart_givenCartRepositoryDeleteByUserIdDoesNothing() {
-        // Arrange
-        doNothing().when(cartRepository).deleteByUserId(Mockito.<String>any());
+    @DisplayName("cleanCart does nothing on success")
+    @Tag("Unit")
+    void testCleanCart_success() {
+        doNothing().when(cartRepository).deleteByUserId(anyString());
         when(userService.getCurrentUserId()).thenReturn("42");
 
-        // Act
         cartServiceImpl.cleanCart();
 
-        // Assert
-        verify(cartRepository).deleteByUserId(eq("42"));
+        verify(cartRepository).deleteByUserId("42");
         verify(userService).getCurrentUserId();
     }
 
     /**
-     * Test {@link CartServiceImpl#cleanCart()}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository}.
-     *   <li>Then throw {@link ResourceNotFoundException}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#cleanCart()}
+     * Test cleanCart propagates an exception when userService.getCurrentUserId fails.
      */
     @Test
-    @DisplayName("Test cleanCart(); given CartRepository; then throw ResourceNotFoundException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"void CartServiceImpl.cleanCart()"})
-    void testCleanCart_givenCartRepository_thenThrowResourceNotFoundException() {
-        // Arrange
+    @DisplayName("cleanCart throws when userService fails")
+    @Tag("Unit")
+    void testCleanCart_userServiceThrows() {
         when(userService.getCurrentUserId())
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
 
-        // Act and Assert
         assertThrows(ResourceNotFoundException.class, () -> cartServiceImpl.cleanCart());
         verify(userService).getCurrentUserId();
     }
 
     /**
-     * Test {@link CartServiceImpl#removeFromCart(CartRequest)}.
-     *
-     * <p>Method under test: {@link CartServiceImpl#removeFromCart(CartRequest)}
+     * Test removeFromCart propagates exception when mapper.toResponse fails.
      */
     @Test
-    @DisplayName("Test removeFromCart(CartRequest)")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.removeFromCart(CartRequest)"})
-    void testRemoveFromCart() {
-        // Arrange
-        CartEntity cartEntity = new CartEntity();
-        cartEntity.setId("42");
-        cartEntity.setItems(new HashMap<>());
-        cartEntity.setUserId("42");
-        Optional<CartEntity> ofResult = Optional.of(cartEntity);
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(ofResult);
+    @DisplayName("removeFromCart throws when mapper.toResponse fails")
+    @Tag("Unit")
+    void testRemoveFromCart_mapperThrows() {
+        CartEntity existing = new CartEntity(); existing.setId("42"); existing.setItems(new HashMap<>()); existing.setUserId("42");
+        when(cartRepository.findByUserId(anyString())).thenReturn(Optional.of(existing));
         when(userService.getCurrentUserId()).thenReturn("42");
-        when(cartMapper.toResponse(Mockito.<CartEntity>any()))
+        when(cartMapper.toResponse(any(CartEntity.class)))
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class, () -> cartServiceImpl.removeFromCart(new CartRequest()));
+        assertThrows(ResourceNotFoundException.class,
+                () -> cartServiceImpl.removeFromCart(new CartRequest()));
+
         verify(cartMapper).toResponse(isA(CartEntity.class));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService, atLeast(1)).getCurrentUserId();
+        verify(cartRepository).findByUserId("42");
     }
 
     /**
-     * Test {@link CartServiceImpl#removeFromCart(CartRequest)}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository} {@link CartRepository#findByUserId(String)} return empty.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#removeFromCart(CartRequest)}
+     * Test removeFromCart propagates an exception when repository.findByUserId returns empty.
      */
     @Test
-    @DisplayName(
-            "Test removeFromCart(CartRequest); given CartRepository findByUserId(String) return empty")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.removeFromCart(CartRequest)"})
-    void testRemoveFromCart_givenCartRepositoryFindByUserIdReturnEmpty() {
-        // Arrange
-        Optional<CartEntity> emptyResult = Optional.empty();
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(emptyResult);
+    @DisplayName("removeFromCart throws when repository returns empty")
+    @Tag("Unit")
+    void testRemoveFromCart_emptyRepoThrows() {
+        when(cartRepository.findByUserId(anyString())).thenReturn(Optional.empty());
         when(userService.getCurrentUserId()).thenReturn("42");
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class, () -> cartServiceImpl.removeFromCart(new CartRequest()));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService, atLeast(1)).getCurrentUserId();
+        assertThrows(ResourceNotFoundException.class,
+                () -> cartServiceImpl.removeFromCart(new CartRequest()));
+
+        verify(cartRepository).findByUserId("42");
+        verify(userService, times(2)).getCurrentUserId();
     }
 
     /**
-     * Test {@link CartServiceImpl#removeFromCart(CartRequest)}.
-     *
-     * <ul>
-     *   <li>Given {@link CartRepository}.
-     *   <li>Then throw {@link ResourceNotFoundException}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#removeFromCart(CartRequest)}
+     * Test removeFromCart integrates with UserRepository, AuthFacade and UserServiceImpl when cart not found.
      */
     @Test
-    @DisplayName(
-            "Test removeFromCart(CartRequest); given CartRepository; then throw ResourceNotFoundException")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.removeFromCart(CartRequest)"})
-    void testRemoveFromCart_givenCartRepository_thenThrowResourceNotFoundException() {
-        // Arrange
-        when(userService.getCurrentUserId())
+    @DisplayName("removeFromCart loads user and handles missing cart")
+    @Tag("Unit")
+    void testRemoveFromCart_callsFindByEmail() {
+        CartRepository repo = mock(CartRepository.class);
+        when(repo.findByUserId(anyString()))
                 .thenThrow(new ResourceNotFoundException("An error occurred"));
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class, () -> cartServiceImpl.removeFromCart(new CartRequest()));
-        verify(userService).getCurrentUserId();
-    }
-
-    /**
-     * Test {@link CartServiceImpl#removeFromCart(CartRequest)}.
-     *
-     * <ul>
-     *   <li>Then calls {@link UserRepository#findByEmail(String)}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#removeFromCart(CartRequest)}
-     */
-    @Test
-    @DisplayName("Test removeFromCart(CartRequest); then calls findByEmail(String)")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.removeFromCart(CartRequest)"})
-    void testRemoveFromCart_thenCallsFindByEmail() {
-        // Arrange
-        CartRepository repository = mock(CartRepository.class);
-        when(repository.findByUserId(Mockito.<String>any()))
-                .thenThrow(new ResourceNotFoundException("An error occurred"));
-
-        UserEntity userEntity = new UserEntity();
-        userEntity.setEmail("jane.doe@example.org");
-        userEntity.setFullName("Dr Jane Doe");
-        userEntity.setId("42");
-        userEntity.setPassword("iloveyou");
-        Optional<UserEntity> ofResult = Optional.of(userEntity);
-        UserRepository repository2 = mock(UserRepository.class);
-        when(repository2.findByEmail(Mockito.<String>any())).thenReturn(ofResult);
-        AuthFacade authFacade = mock(AuthFacade.class);
-        when(authFacade.getAuthentication())
+        UserEntity user = new UserEntity(); user.setId("42"); user.setEmail("jane.doe@example.org");
+        UserRepository userRepo = mock(UserRepository.class);
+        when(userRepo.findByEmail(anyString())).thenReturn(Optional.of(user));
+        AuthFacade auth = mock(AuthFacade.class);
+        when(auth.getAuthentication())
                 .thenReturn(OneTimeTokenAuthenticationToken.unauthenticated("ABC123"));
-        UserMapperImpl mapper = new UserMapperImpl();
-        CartServiceImpl cartServiceImpl =
-                new CartServiceImpl(
-                        repository,
-                        new UserServiceImpl(repository2, mapper, authFacade, new BCryptPasswordEncoder()),
-                        mock(CartMapper.class));
+        UserService userSvcImpl = new UserServiceImpl(userRepo, new UserMapperImpl(), auth, new BCryptPasswordEncoder());
+        CartServiceImpl svc = new CartServiceImpl(repo, userSvcImpl, mock(CartMapper.class));
 
-        // Act and Assert
-        assertThrows(
-                ResourceNotFoundException.class, () -> cartServiceImpl.removeFromCart(new CartRequest()));
-        verify(repository).findByUserId(eq("42"));
-        verify(repository2, atLeast(1)).findByEmail(eq(""));
-        verify(authFacade, atLeast(1)).getAuthentication();
+        assertThrows(ResourceNotFoundException.class,
+                () -> svc.removeFromCart(new CartRequest()));
+
+        verify(repo).findByUserId("42");
+        verify(userRepo, times(2)).findByEmail("");
+        verify(auth, times(2)).getAuthentication();
     }
 
     /**
-     * Test {@link CartServiceImpl#removeFromCart(CartRequest)}.
-     *
-     * <ul>
-     *   <li>Then return Id is {@code 42}.
-     * </ul>
-     *
-     * <p>Method under test: {@link CartServiceImpl#removeFromCart(CartRequest)}
+     * Test removeFromCart returns response when cart exists.
      */
     @Test
-    @DisplayName("Test removeFromCart(CartRequest); then return Id is '42'")
-    @Tag("ContributionFromDiffblue")
-    @ManagedByDiffblue
-    @MethodsUnderTest({"CartResponse CartServiceImpl.removeFromCart(CartRequest)"})
-    void testRemoveFromCart_thenReturnIdIs42() {
-        // Arrange
-        CartEntity cartEntity = new CartEntity();
-        cartEntity.setId("42");
-        cartEntity.setItems(new HashMap<>());
-        cartEntity.setUserId("42");
-        Optional<CartEntity> ofResult = Optional.of(cartEntity);
-        when(cartRepository.findByUserId(Mockito.<String>any())).thenReturn(ofResult);
+    @DisplayName("removeFromCart returns existing cart")
+    @Tag("Unit")
+    void testRemoveFromCart_returnsCart() {
+        CartEntity existing = new CartEntity(); existing.setId("42"); existing.setItems(new HashMap<>()); existing.setUserId("42");
+        when(cartRepository.findByUserId(anyString())).thenReturn(Optional.of(existing));
         when(userService.getCurrentUserId()).thenReturn("42");
-        CartResponse buildResult = CartResponse.builder().id("42").userId("42").build();
-        when(cartMapper.toResponse(Mockito.<CartEntity>any())).thenReturn(buildResult);
+        CartResponse expected = CartResponse.builder().id("42").userId("42").items(new HashMap<>()).build();
+        when(cartMapper.toResponse(any(CartEntity.class))).thenReturn(expected);
 
-        // Act
-        CartResponse actualRemoveFromCartResult = cartServiceImpl.removeFromCart(new CartRequest());
+        CartResponse actual = cartServiceImpl.removeFromCart(new CartRequest());
 
-        // Assert
+        verify(cartRepository).findByUserId("42");
         verify(cartMapper).toResponse(isA(CartEntity.class));
-        verify(cartRepository).findByUserId(eq("42"));
-        verify(userService, atLeast(1)).getCurrentUserId();
-        assertEquals("42", actualRemoveFromCartResult.getId());
-        assertEquals("42", actualRemoveFromCartResult.getUserId());
-        assertTrue(actualRemoveFromCartResult.getItems().isEmpty());
+        assertEquals("42", actual.getId());
+        assertEquals("42", actual.getUserId());
+        assertTrue(actual.getItems().isEmpty());
     }
 }

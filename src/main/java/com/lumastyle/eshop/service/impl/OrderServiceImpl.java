@@ -8,6 +8,7 @@ import com.lumastyle.eshop.exception.ResourceNotFoundException;
 import com.lumastyle.eshop.mapper.OrderMapper;
 import com.lumastyle.eshop.repository.CartRepository;
 import com.lumastyle.eshop.repository.OrderRepository;
+import com.lumastyle.eshop.service.EmailService;
 import com.lumastyle.eshop.service.OrderService;
 import com.lumastyle.eshop.service.UserService;
 import cz.gopay.api.v3.GPClientException;
@@ -35,6 +36,7 @@ public class OrderServiceImpl implements OrderService {
     private final CartRepository cartRepository;
     private final OrderMapper mapper;
     private final UserService userService;
+    private final EmailService emailService;
 
     @Value("${gopay.api.url}")
     private String gopayApiUrl;
@@ -100,6 +102,7 @@ public class OrderServiceImpl implements OrderService {
         if ("Paid".equalsIgnoreCase(status)) {
             cartRepository.deleteByUserId(existingOrder.getUserId());
             log.info("Cart for user {} cleared successfully", existingOrder.getUserId());
+            sendEmail(existingOrder);
         }
     }
 
@@ -131,6 +134,40 @@ public class OrderServiceImpl implements OrderService {
         entity.setOrderStatus(status);
         log.info("Order {} updated with status {}", orderId, status);
         orderRepository.save(entity);
+    }
+
+    // === Helper methods ===
+
+    /**
+     * Sends a payment confirmation email to the customer.
+     * <p>
+     * This method constructs a brief notification message informing the user that
+     * clients' payment for the specified order has been successfully received and
+     * that the order is being prepared for shipment.
+     * </p>
+     *
+     * @param existingOrder the {@link OrderEntity order}
+     *                      whose payment has been processed
+     * @see EmailService#sendPaymentConfirmation(String to, String subject, String text)
+     */
+    private void sendEmail(OrderEntity existingOrder) {
+        String subject = "Potvrzení platby – objednávka č. " + existingOrder.getId();
+
+        String text =
+                "Dobrý den,\n\n" +
+                        "děkujeme Vám za Vaši objednávku č. " + existingOrder.getId() +
+                        ". Platba byla úspěšně přijata a nyní pro Vás připravujeme zboží k odeslání.\n\n" +
+                        "Ještě jednou děkujeme za projevenou důvěru a těšíme se na další spolupráci.\n\n" +
+                        "S přátelským pozdravem,\n" +
+                        "Tým Lumastyle ";
+
+        emailService.sendPaymentConfirmation(
+                existingOrder.getEmail(),
+                subject,
+                text
+        );
+        log.info("Confirmation email was sent to '{}' with subject '{}'", existingOrder.getEmail(), subject);
+        log.info("Order '{}' - payment confirmation email sent successfully", existingOrder.getId());
     }
 }
 

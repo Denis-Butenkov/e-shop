@@ -4,19 +4,32 @@ import com.lumastyle.eshop.dto.order.OrderItem;
 import com.lumastyle.eshop.dto.order.OrderRequest;
 import com.lumastyle.eshop.dto.order.OrderResponse;
 import com.lumastyle.eshop.entity.OrderEntity;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link OrderMapper},
+ * verifying mapping between {@link OrderRequest}/{@link OrderResponse} DTO and {@link OrderEntity}.
+ */
+@ActiveProfiles("test")
 class OrderMapperTest {
 
     private final OrderMapper mapper = Mappers.getMapper(OrderMapper.class);
 
+    /**
+     * Verifies that toEntity maps fields from {@link OrderRequest} to {@link OrderEntity} correctly.
+     */
     @Test
+    @DisplayName("toEntity maps all fields correctly")
+    @Tag("Unit")
     void toEntity_mapsFields() {
         OrderItem item = OrderItem.builder()
                 .productId("p1")
@@ -50,9 +63,17 @@ class OrderMapperTest {
         assertEquals(request.getAmount(), entity.getAmount());
     }
 
+    /**
+     * Verifies that toResponse maps fields from {@link OrderEntity} to {@link OrderResponse} correctly.
+     */
     @Test
+    @DisplayName("toResponse maps all fields correctly")
+    @Tag("Unit")
     void toResponse_mapsFields() {
-        OrderItem item = OrderItem.builder().productId("p1").quantity(1).build();
+        OrderItem item = OrderItem.builder()
+                .productId("p1")
+                .quantity(1)
+                .build();
         OrderEntity entity = OrderEntity.builder()
                 .id("1")
                 .userId("u1")

@@ -2,6 +2,8 @@ package com.lumastyle.eshop.service.impl;
 
 import com.lumastyle.eshop.exception.FileStorageException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,13 +25,10 @@ import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for {@link S3FileStorageServiceImpl}.
+ * Unit tests for {@link S3FileStorageServiceImpl}, covering file upload and deletion scenarios.
  */
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
@@ -44,24 +43,31 @@ class S3FileStorageServiceTest {
     private MockMultipartFile file;
     private final String bucketName = "test-bucket";
 
+    /**
+     * Sets up a mock multipart file and injects the bucket name via reflection before each test.
+     *
+     * @throws Exception if reflection fails when setting the bucketName field
+     */
     @BeforeEach
     void setUp() throws Exception {
-        // Initialize a mock multipart file
         file = new MockMultipartFile(
                 "file",
-                "test.txt",
+                "test.png",
                 "text/plain",
                 "content".getBytes()
         );
-        // Inject bucketName via reflection
         Field bucketField = S3FileStorageServiceImpl.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, bucketName);
     }
 
+    /**
+     * Verifies that a successful S3 putObject response returns a valid URL.
+     */
     @Test
+    @DisplayName("uploadFile returns URL when upload succeeds")
+    @Tag("Unit")
     void uploadFile_success() {
-        // Mock successful S3 response
         PutObjectResponse response = mock(PutObjectResponse.class);
         SdkHttpResponse httpResponse = mock(SdkHttpResponse.class);
         when(httpResponse.isSuccessful()).thenReturn(true);
@@ -75,9 +81,13 @@ class S3FileStorageServiceTest {
         verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
+    /**
+     * Ensures that uploadFile throws FileStorageException when HTTP status indicates failure.
+     */
     @Test
+    @DisplayName("uploadFile throws when HTTP response is not successful")
+    @Tag("Unit")
     void uploadFile_httpFailure_throwsFileStorageException() {
-        // Mock failed HTTP status
         PutObjectResponse response = mock(PutObjectResponse.class);
         SdkHttpResponse httpResponse = mock(SdkHttpResponse.class);
         when(httpResponse.isSuccessful()).thenReturn(false);
@@ -88,27 +98,40 @@ class S3FileStorageServiceTest {
         assertThrows(FileStorageException.class, () -> service.uploadFile(file));
     }
 
+    /**
+     * Ensures that uploadFile throws FileStorageException when reading the file bytes fails.
+     */
     @Test
+    @DisplayName("uploadFile throws when file IO fails")
+    @Tag("Unit")
     void uploadFile_ioException_throwsFileStorageException() throws IOException {
-        // Simulate IO exception when reading a file
         MultipartFile badFile = mock(MultipartFile.class);
-        when(badFile.getOriginalFilename()).thenReturn("test.txt");
+        when(badFile.getOriginalFilename()).thenReturn("test.png");
         when(badFile.getBytes()).thenThrow(new IOException("fail"));
 
         assertThrows(FileStorageException.class, () -> service.uploadFile(badFile));
     }
 
+    /**
+     * Verifies that deleteFile returns true when deletion succeeds without exception.
+     */
     @Test
+    @DisplayName("deleteFile returns true on successful delete")
+    @Tag("Unit")
     void deleteFile_success() {
-        // deleteObject returns void; no exception => success
         boolean result = service.deleteFile("some-key");
+
         assertTrue(result);
         verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
     }
 
+    /**
+     * Ensures deleteFile throws FileStorageException when S3 client deletion fails.
+     */
     @Test
+    @DisplayName("deleteFile throws when S3 deletion fails")
+    @Tag("Unit")
     void deleteFile_failure_throwsFileStorageException() {
-        // Simulate S3 exception on delete
         doThrow(S3Exception.builder().message("fail").build())
                 .when(s3Client)
                 .deleteObject(any(DeleteObjectRequest.class));
