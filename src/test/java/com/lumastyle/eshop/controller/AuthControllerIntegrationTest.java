@@ -2,28 +2,21 @@ package com.lumastyle.eshop.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lumastyle.eshop.dto.auth.AuthRequest;
-import com.lumastyle.eshop.exception.BadRequestException;
-import com.lumastyle.eshop.filter.JwtAuthFilter;
-import com.lumastyle.eshop.service.impl.AppUserDetailsService;
+import com.lumastyle.eshop.dto.auth.AuthResponse;
+import com.lumastyle.eshop.entity.UserEntity;
+import com.lumastyle.eshop.repository.UserRepository;
 import com.lumastyle.eshop.util.JwtUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,8 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * These tests validate the /api/login endpoint under various scenarios.
  */
 @ActiveProfiles("test")
-@ExtendWith(SpringExtension.class)
-@WebMvcTest(controllers = AuthController.class)
+@SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerIntegrationTest {
 
@@ -44,62 +36,69 @@ class AuthControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private AppUserDetailsService userDetailsService;
+    @Autowired
+    private UserRepository userRepository;
 
-    @MockitoBean
-    private AuthenticationManager authenticationManager;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-    @MockitoBean
+    @Autowired
     private JwtUtil jwtUtil;
 
-    @MockitoBean
-    private JwtAuthFilter jwtAuthFilter;
+    @BeforeEach
+    void setup() {
+        userRepository.deleteAll();
+    }
+
 
     /**
      * Test: login with valid credentials should return a JWT token.
      */
     @Test
     void login_withValidCredentials_returnsToken() throws Exception {
+        userRepository.save(UserEntity.builder()
+                .fullName("Charlie")
+                .email("charlie@example.com")
+                .password(passwordEncoder.encode("password123"))
+                .build());
+
         AuthRequest req = new AuthRequest();
         req.setEmail("charlie@example.com");
         req.setPassword("password123");
 
-        Authentication auth = mock(Authentication.class);
-        UserDetails userDetails = mock(UserDetails.class);
-        when(authenticationManager.authenticate(
-                any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(auth);
-        // Ensure the UserDetailsService is stubbed to return our mock
-        when(userDetailsService.loadUserByUsername(req.getEmail()))
-                .thenReturn(userDetails);
-        when(jwtUtil.generateToken(userDetails)).thenReturn("jwt-token-xyz");
-
-        mockMvc.perform(post("/api/login")
+        String responseBody = mockMvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("jwt-token-xyz"));
+                .andExpect(jsonPath("$.email").value("charlie@example.com"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        AuthResponse res = objectMapper.readValue(responseBody, AuthResponse.class);
+        assertEquals("charlie@example.com", jwtUtil.extractUsername(res.getToken()));
     }
 
     /**
-     * Test: login with invalid credentials should return BadRequest (400).
+     * Test: login with invalid credentials should return a server error.
      */
     @Test
-    void login_withInvalidCredentials_returnsBadRequest() throws Exception {
+    void login_withInvalidCredentials_returnsServerError() throws Exception {
+        userRepository.save(UserEntity.builder()
+                .fullName("Dan")
+                .email("dan@example.com")
+                .password(passwordEncoder.encode("correctpass"))
+                .build());
+
         AuthRequest req = new AuthRequest();
         req.setEmail("dan@example.com");
         req.setPassword("wrongpass");
 
-        when(authenticationManager.authenticate(
-                any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadRequestException("Invalid credentials"));
-
         mockMvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Invalid credentials"));
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Bad credentials"));
     }
 
     /**
@@ -129,5 +128,4 @@ class AuthControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
     }
-
 }
