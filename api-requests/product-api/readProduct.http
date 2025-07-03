@@ -1,0 +1,3 @@
+### GET request: get product by ID
+GET https://localhost:8443/api/products/685167e64e15da737dfacc
+###

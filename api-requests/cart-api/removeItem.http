@@ -1,0 +1,10 @@
+### PATCH request: Remove item from cart
+PATCH https://localhost:8443/api/cart
+Content-Type: application/json
+Authorization: Bearer <YOUR_TOKEN>
+
+{
+  "productId": "12345"
+}
+
+###

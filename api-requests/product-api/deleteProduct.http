@@ -1,0 +1,5 @@
+### DELETE product by ID
+DELETE https://localhost:8443/api/products/685167e64e15da737dfacca4
+Authorization: Bearer <YOUR_TOKEN>
+
+-###

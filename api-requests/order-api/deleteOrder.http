@@ -1,0 +1,5 @@
+### Delete request: delete an order by orderId
+DELETE https://localhost:8443/api/orders/12345
+Authorization: Bearer <YOUR_TOKEN>
+
+###

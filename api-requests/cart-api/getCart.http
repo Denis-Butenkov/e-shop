@@ -1,0 +1,5 @@
+### GET request: Get current user's cart
+GET https://localhost:8443/api/cart
+Authorization: Bearer <YOUR_TOKEN>
+
+###

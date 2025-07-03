@@ -1,0 +1,20 @@
+### POST request: Create order and payment
+POST https://localhost:8443/api/orders/create
+Content-Type: application/json
+Authorization: Bearer <YOUR_TOKEN>
+
+{
+  "orderedItems": [
+    {
+      "productId": "12345",
+      "quantity": 1,
+      "price": 100
+    }
+  ],
+  "userAddress": "123 Sample Street",
+  "amount": 100,
+  "phoneNumber": "+123456789",
+  "email": "customer@example.com"
+}
+
+###

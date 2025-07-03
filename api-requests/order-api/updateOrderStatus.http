@@ -1,0 +1,5 @@
+### PATCH request: Update order status
+PATCH https://localhost:8443/api/orders/status/12345?status=SHIPPED
+Authorization: Bearer <YOUR_TOKEN>
+
+###

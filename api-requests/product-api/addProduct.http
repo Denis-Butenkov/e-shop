@@ -1,9 +1,10 @@
 ### POST request to example server
-POST http://localhost:8080/api/products
+ POST https://localhost:8443/api/products
+Authorization: Bearer <YOUR_TOKEN>
 Content-Type: multipart/form-data; boundary=MyBoundary
 
 --MyBoundary
-Content-Disposition: form-data; name="food"
+Content-Disposition: form-data; name="product"
 Content-Type: application/json
 
 {
@@ -15,6 +16,6 @@ Content-Type: application/json
 --MyBoundary
 Content-Disposition: form-data; name="file"; filename="test2.png"
 Content-Type: image/png
-
-< ../src/main/resources/image/test2.png
+ 
+ < ../src/main/resources/image/test2.png
 --MyBoundary--

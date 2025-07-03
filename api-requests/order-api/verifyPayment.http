@@ -1,0 +1,10 @@
+### POST request: Verify payment
+POST https://localhost:8443/api/orders/verify
+Authorization: Bearer <YOUR_TOKEN>
+Content-Type: application/json
+
+{
+  "paymentId": "987654"
+}
+
+###

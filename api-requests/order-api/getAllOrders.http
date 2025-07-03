@@ -1,0 +1,4 @@
+### GET request: Get all orders (admin)
+GET https://localhost:8443/api/orders/all
+
+###

@@ -1,0 +1,3 @@
+### GET request: Get current user's orders
+GET https://localhost:8443/api/orders
+Authorization: Bearer <YOUR_TOKEN>

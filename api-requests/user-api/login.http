@@ -1,5 +1,5 @@
 ### POST request to register a new User
-POST http://localhost:8080/api/login
+POST https://localhost:8443/api/login
 Content-Type: application/json
 
 {

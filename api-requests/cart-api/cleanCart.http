@@ -1,0 +1,4 @@
+### DELETE request: Remove all items from cart
+DELETE https://localhost:8443/api/cart
+Authorization: Bearer <YOUR_TOKEN>
+###
