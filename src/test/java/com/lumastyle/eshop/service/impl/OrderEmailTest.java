@@ -7,6 +7,8 @@ import com.lumastyle.eshop.repository.CartRepository;
 import com.lumastyle.eshop.repository.OrderRepository;
 import com.lumastyle.eshop.service.EmailService;
 import com.lumastyle.eshop.service.UserService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -41,15 +43,28 @@ class OrderEmailTest {
     @Mock private UserService userService;
     @Mock private JavaMailSender mailSender;
     @Mock private EmailService emailService;
+    @Mock private Counter ordersCreatedCounter;
+    @Mock private Counter ordersPaymentFailedCounter;
+    @Mock private Timer orderProcessingTimer;
+    @Mock private Counter emailsSentCounter;
 
     @InjectMocks
     private OrderServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        // Initialize real EmailServiceImpl with mocked mailSender
-        emailService = new EmailServiceImpl(mailSender);
-        service = new OrderServiceImpl(orderRepository, cartRepository, mapper, userService, emailService);
+        // Initialize real EmailServiceImpl with mocked mailSender and metrics
+        emailService = new EmailServiceImpl(mailSender, emailsSentCounter);
+        service = new OrderServiceImpl(
+                orderRepository,
+                cartRepository,
+                mapper,
+                userService,
+                emailService,
+                ordersCreatedCounter,
+                ordersPaymentFailedCounter,
+                orderProcessingTimer
+        );
     }
 
     /**

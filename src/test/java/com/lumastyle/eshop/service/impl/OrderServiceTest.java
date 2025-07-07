@@ -10,6 +10,7 @@ import com.lumastyle.eshop.repository.CartRepository;
 import com.lumastyle.eshop.repository.OrderRepository;
 import com.lumastyle.eshop.service.EmailService;
 import com.lumastyle.eshop.service.UserService;
+import io.micrometer.core.instrument.Counter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,12 @@ class OrderServiceTest {
     private UserService userService;
     @Mock
     private EmailService emailService;
+    @Mock
+    private Counter ordersCreatedCounter;
+    @Mock
+    private Counter ordersPaymentFailedCounter;
+    @Mock
+    private Timer orderProcessingTimer;
 
     @InjectMocks
     private OrderServiceImpl orderServiceImpl;

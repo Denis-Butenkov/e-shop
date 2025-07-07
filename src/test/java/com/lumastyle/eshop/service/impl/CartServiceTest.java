@@ -24,6 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -40,6 +41,7 @@ class CartServiceTest {
     @Mock private CartRepository cartRepository;
     @Mock private CartMapper cartMapper;
     @Mock private UserService userService;
+    @Mock private AtomicInteger cartItemsGauge;
 
     @InjectMocks
     private CartServiceImpl cartServiceImpl;
@@ -159,7 +161,13 @@ class CartServiceTest {
         when(auth.getAuthentication())
                 .thenReturn(OneTimeTokenAuthenticationToken.unauthenticated("ABC123"));
         UserService userSvcImpl = new UserServiceImpl(userRepo, new UserMapperImpl(), auth, new BCryptPasswordEncoder());
-        CartServiceImpl svc = new CartServiceImpl(repo, userSvcImpl, mock(CartMapper.class));
+        CartServiceImpl svc = new CartServiceImpl(
+                repo,
+                userSvcImpl,
+                mock(CartMapper.class),
+                new AtomicInteger()
+        );
+
 
         assertThrows(ResourceNotFoundException.class, svc::getCart);
         verify(repo).findByUserId("42");
@@ -290,7 +298,12 @@ class CartServiceTest {
         when(auth.getAuthentication())
                 .thenReturn(OneTimeTokenAuthenticationToken.unauthenticated("ABC123"));
         UserService userSvcImpl = new UserServiceImpl(userRepo, new UserMapperImpl(), auth, new BCryptPasswordEncoder());
-        CartServiceImpl svc = new CartServiceImpl(repo, userSvcImpl, mock(CartMapper.class));
+        CartServiceImpl svc = new CartServiceImpl(
+                repo,
+                userSvcImpl,
+                mock(CartMapper.class),
+                new AtomicInteger()
+        );
 
         assertThrows(ResourceNotFoundException.class,
                 () -> svc.removeFromCart(new CartRequest()));

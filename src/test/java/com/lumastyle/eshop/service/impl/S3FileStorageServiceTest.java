@@ -1,6 +1,7 @@
 package com.lumastyle.eshop.service.impl;
 
 import com.lumastyle.eshop.exception.FileStorageException;
+import io.micrometer.core.instrument.Counter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -36,6 +37,12 @@ class S3FileStorageServiceTest {
 
     @Mock
     private S3Client s3Client;
+    @Mock
+    private Counter s3UploadsCounter;
+    @Mock
+    private Counter s3DeletesCounter;
+    @Mock
+    private Counter s3TransferredBytesCounter;
 
     @InjectMocks
     private S3FileStorageServiceImpl service;

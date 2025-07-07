@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -23,6 +24,7 @@ public class CartServiceImpl implements CartService {
     private final CartRepository repository;
     private final UserService service;
     private final CartMapper mapper;
+    private final AtomicInteger cartItemsGauge;
 
     @Override
     public CartResponse addToCart(CartRequest request) {
@@ -34,6 +36,7 @@ public class CartServiceImpl implements CartService {
         incrementItem(cart, request.getProductId());
         CartEntity saved = repository.save(cart);
         log.info("Item added to cart successfully: {}", saved);
+        updateGauge(saved);
         return mapper.toResponse(saved);
     }
 
@@ -53,6 +56,7 @@ public class CartServiceImpl implements CartService {
         log.info("Cleaning cart for user: {}", userId);
         repository.deleteByUserId(userId);
         log.info("Cart for user: {} deleted successfully", userId);
+        cartItemsGauge.set(0);
     }
 
     @Override
@@ -63,6 +67,7 @@ public class CartServiceImpl implements CartService {
         if (changed) {
             cart = repository.save(cart);
             log.info("Item removed from cart successfully: {}", cart);
+            updateGauge(cart);
         }
         return mapper.toResponse(cart);
     }
@@ -130,6 +135,16 @@ public class CartServiceImpl implements CartService {
      */
     private void updateItemQuantity(Map<String, Integer> items, String productId) {
         items.computeIfPresent(productId, (id, qty) -> qty > 1 ? qty - 1 : null);
+    }
+
+    /**
+     * Recalculate the {@code cart_items_total} gauge based on the provided cart.
+     *
+     * @param cart the cart whose item quantities should be summed
+     */
+    private void updateGauge(CartEntity cart) {
+        int total = cart.getItems().values().stream().mapToInt(Integer::intValue).sum();
+        cartItemsGauge.set(total);
     }
 
 }

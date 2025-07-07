@@ -11,6 +11,7 @@ import com.lumastyle.eshop.util.JwtUtil;
 
 import java.util.ArrayList;
 
+import io.micrometer.core.instrument.Counter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private Counter authFailedCounter;
 
     /**
      * Test {@link AuthController#login(AuthRequest)}.

@@ -1,21 +1,238 @@
 {
   "id": null,
-  "title": "e-shop dashboard",
+  "uid": "eshop-overview",
+  "title": "E-shop Overview",
+  "tags": ["e-shop", "metrics"],
   "timezone": "browser",
   "schemaVersion": 36,
   "version": 1,
+  "refresh": "30s",
   "panels": [
     {
-      "type": "graph",
-      "title": "HTTP Requests",
+      "type": "stat",
+      "title": "Orders per second",
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 0 },
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "http_server_requests_seconds_count",
-          "legendFormat": "{{method}} {{status}}"
+          "expr": "sum(rate(orders_created_total[1m]))",
+          "refId": "A"
         }
       ],
-      "id": 1
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Failed payments/s",
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(order_payment_failures_total[1m]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.1 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Active carts",
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(active_carts_total)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Up Time",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "process_uptime_seconds",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dthms"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests/sec",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (method)",
+          "legendFormat": "{{method}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Order p95 Latency (ms)",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 10 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(order_processing_seconds_bucket[5m])) by (le)) * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "CPU Usage",
+      "gridPos": { "h": 6, "w": 3, "x": 6, "y": 10 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * process_cpu_usage",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "Memory Usage",
+      "gridPos": { "h": 6, "w": 3, "x": 9, "y": 10 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * (process_resident_memory_bytes / process_virtual_memory_bytes)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Live Threads",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "jvm_threads_live_threads",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "type": "bar-gauge",
+      "title": "GC Pause p99 (ms)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(jvm_gc_pause_seconds_bucket[5m])) by (le)) * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 100 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        }
+      }
     }
   ]
 }

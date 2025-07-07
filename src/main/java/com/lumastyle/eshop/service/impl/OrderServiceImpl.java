@@ -19,6 +19,8 @@ import cz.gopay.api.v3.model.payment.BasePayment;
 import cz.gopay.api.v3.model.payment.Payment;
 import cz.gopay.api.v3.model.payment.PaymentFactory;
 import cz.gopay.api.v3.model.payment.support.ItemType;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +39,9 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper mapper;
     private final UserService userService;
     private final EmailService emailService;
+    private final Counter ordersCreatedCounter;
+    private final Counter ordersPaymentFailedCounter;
+    private final Timer orderProcessingTimer;
 
     @Value("${gopay.api.url}")
     private String gopayApiUrl;
@@ -53,6 +58,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse createOrderAndPayment(OrderRequest request) {
+        Timer.Sample sample = Timer.start();
         OrderEntity newOrder = mapper.toEntity(request);
         log.info("Creating new order: {}", newOrder);
         newOrder = orderRepository.save(newOrder);
@@ -80,9 +86,12 @@ public class OrderServiceImpl implements OrderService {
             newOrder.setUserId(userService.getCurrentUserId());
             newOrder = orderRepository.save(newOrder);
             log.info("GoPay payment created: {}", createdPayment);
+            ordersCreatedCounter.increment();
         } catch (GPClientException e) {
             log.error("Communication error with GoPay: {}", e.getMessage(), e);
             throw new GoPayIntegrationException("Integration error with GoPay", e);
+        } finally {
+            sample.stop(orderProcessingTimer);
         }
 
         return mapper.toResponse(newOrder);
@@ -103,6 +112,8 @@ public class OrderServiceImpl implements OrderService {
             cartRepository.deleteByUserId(existingOrder.getUserId());
             log.info("Cart for user {} cleared successfully", existingOrder.getUserId());
             sendEmail(existingOrder);
+        } else {
+            ordersPaymentFailedCounter.increment();
         }
     }
 

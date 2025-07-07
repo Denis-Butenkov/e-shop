@@ -3,6 +3,7 @@ package com.lumastyle.eshop.service.impl;
 import com.lumastyle.eshop.exception.BadRequestException;
 import com.lumastyle.eshop.exception.FileStorageException;
 import com.lumastyle.eshop.service.FileStorageService;
+import io.micrometer.core.instrument.Counter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,9 @@ import java.util.UUID;
 public class S3FileStorageServiceImpl implements FileStorageService {
 
     private final S3Client s3Client;
+    private final Counter s3UploadsCounter;
+    private final Counter s3DeletesCounter;
+    private final Counter s3TransferredBytesCounter;
 
     @Value("${aws.s3.bucket.name}")
     private String bucketName;
@@ -43,6 +47,8 @@ public class S3FileStorageServiceImpl implements FileStorageService {
 
             PutObjectResponse response = s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
             validateResponse(response, key);
+            s3UploadsCounter.increment();
+            s3TransferredBytesCounter.increment(file.getSize());
         } catch (IOException e) {
             throw new FileStorageException("Upload failed", e);
         }
@@ -59,6 +65,7 @@ public class S3FileStorageServiceImpl implements FileStorageService {
         log.info("Deleting file with key: {}", key);
         try {
             s3Client.deleteObject(request);
+            s3DeletesCounter.increment();
             return true;
         } catch (SdkException e) {
             throw new FileStorageException("Deletion failed", e);

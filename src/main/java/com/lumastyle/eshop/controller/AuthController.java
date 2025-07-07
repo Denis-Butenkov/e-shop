@@ -4,6 +4,7 @@ import com.lumastyle.eshop.dto.auth.AuthRequest;
 import com.lumastyle.eshop.dto.auth.AuthResponse;
 import com.lumastyle.eshop.service.impl.AppUserDetailsService;
 import com.lumastyle.eshop.util.JwtUtil;
+import io.micrometer.core.instrument.Counter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,6 +33,7 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final AppUserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
+    private final Counter authFailedCounter;
 
     @Operation(
             summary = "Authenticate user and generate JWT",
@@ -53,7 +56,12 @@ public class AuthController {
                                       content = @Content(schema = @Schema(implementation = AuthRequest.class)))
                               @RequestBody AuthRequest request) {
         log.info("Received login request for user: {}", request.getEmail());
-        authManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        try {
+            authManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        } catch (AuthenticationException ex) {
+            authFailedCounter.increment();
+            throw ex;
+        }
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
         final String jwtToken = jwtUtil.generateToken(userDetails);
         return new AuthResponse(request.getEmail(), jwtToken);
