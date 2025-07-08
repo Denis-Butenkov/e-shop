@@ -7,8 +7,6 @@ import com.lumastyle.eshop.exception.BadRequestException;
 import com.lumastyle.eshop.mapper.UserMapper;
 import com.lumastyle.eshop.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,9 +20,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for {@link UserServiceImpl}, verifying user registration logic.
- */
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -38,6 +33,7 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -46,9 +42,6 @@ class UserServiceTest {
     private UserEntity savedEntity;
     private UserResponse response;
 
-    /**
-     * Initializes common test data for user registration scenarios.
-     */
     @BeforeEach
     void setUp() {
         request = new UserRequest();
@@ -56,6 +49,7 @@ class UserServiceTest {
         request.setEmail("test@example.com");
         request.setPassword("password123");
 
+        // Simulate mapper encoding password
         entity = UserEntity.builder()
                 .email(request.getEmail())
                 .fullName(request.getFullName())
@@ -76,12 +70,7 @@ class UserServiceTest {
                 .build();
     }
 
-    /**
-     * Verifies that registering an existing email throws BadRequestException.
-     */
     @Test
-    @DisplayName("registerUser throws BadRequest when email exists")
-    @Tag("Unit")
     void registerUser_whenEmailAlreadyExists_shouldThrowBadRequest() {
         when(userRepository.findByEmail(request.getEmail()))
                 .thenReturn(Optional.of(entity));
@@ -94,12 +83,7 @@ class UserServiceTest {
         verify(userMapper, never()).toEntity(any(), any());
     }
 
-    /**
-     * Verifies successful registration maps entity and returns a response.
-     */
     @Test
-    @DisplayName("registerUser maps and saves when valid")
-    @Tag("Unit")
     void registerUser_whenValid_shouldMapEntityAndSave() {
         when(userRepository.findByEmail(request.getEmail()))
                 .thenReturn(Optional.empty());
