@@ -4,5 +4,8 @@ global:
 scrape_configs:
   - job_name: 'spring-actuator'
     metrics_path: '/actuator/prometheus'
+    scheme: https
     static_configs:
-      - targets: ['app:8080']
+      - targets: ['app:8443']
+    tls_config:
+      insecure_skip_verify: true
